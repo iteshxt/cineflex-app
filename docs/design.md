@@ -37,8 +37,10 @@ Spacing: 4px base; page gutter `clamp(16px, 4vw, 56px)`; row gap 40px.
 
 ## 4. Layout
 
-- **Desktop:** fixed 88px left rail: logo at the top, 56px icon buttons (search, home, movies, series, library) centred, Settings pinned at the bottom. Active item = soft tile + 3px accent bar on the rail edge; labels appear as tooltips.
-- **Mobile (<768px):** a floating, icon-only pill (48px targets, 6 items incl. Settings) above the safe area. The active item is filled with the accent.
+- **Order everywhere:** Home, Movies, **Search** (centre), Series, Library.
+- **Desktop:** fixed 88px left rail: logo at the top; the five 56px icon buttons are vertically centred so Search sits at the middle; Settings sits directly below Library after a hairline. Labels appear as tooltips.
+- **Mobile (<768px):** a floating, icon-only pill (52px targets) with Search in the centre. Settings is reached from a gear on the Library page.
+- **Active page:** no box or fill, only a short accent bar under the icon.
 - Max content width: none for heroes; rows bleed to the right edge so cards peek (signals scroll).
 
 ## 5. Components
@@ -50,6 +52,8 @@ Spacing: 4px base; page gutter `clamp(16px, 4vw, 56px)`; row gap 40px.
 - **Row** — title + "See all"; at most 10 titles, ending in a "See all" tile that opens `/collection/[slug]`. Native horizontal scroll with snap; desktop shows round arrow buttons on hover. The home page keeps to five curated rows plus a genre strip.
 - **Detail page** — backdrop at top 70vh with gradient; poster on the left at md+; title/logo, meta chips, genres, overview, actions (Watch Now, My List). Below: cast strip, More like this row. Series: episodes panel on the right at xl, below at smaller sizes.
 - **Episodes panel** — season select, spoiler-protection toggle (blurs stills and hides overviews of unwatched episodes), list of rows: still 16:9, "N. Title", runtime, overview (2 lines).
+- **Hover preview** (mouse only) — after ~450ms on a poster, a 340px panel opens *beside* the card (right, else left, else over it on narrow screens). It morphs out of the poster's exact rect (FLIP via the Web Animations API) and back into it on close; content fades in once the panel is open. Backdrop, title, Play / My List / Details, rating, year, type, genres, 3-line overview.
+- **Dropdowns** — no native `<select>`: the themed `Select` component (pill trigger, animated listbox, full keyboard support) and the filter-bar menus share one look.
 - **Player** — black page, iframe fills viewport; a top bar (back, title, S/E) that fades after 3s of no mouse movement; series get prev/next and an episodes drawer.
 
 ## 6. Brand
