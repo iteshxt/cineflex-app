@@ -1,0 +1,103 @@
+# Cineflex — Technical Specs
+
+## 1. Stack
+
+- **Next.js 16** (App Router, Cache Components enabled, Turbopack), React 19, TypeScript.
+- **Tailwind CSS v4** with design tokens in `src/app/globals.css`.
+- **pnpm** as the package manager.
+- No database. Client state in `localStorage` behind a tiny typed store (`src/lib/library.ts`).
+
+## 2. Repository layout
+
+```
+docs/                 prd.md, specs.md, design.md
+src/app/              routes (see §4)
+src/components/       UI components (server by default, `"use client"` only where needed)
+src/lib/tmdb.ts       TMDB client (server-only, cached)
+src/lib/vidcore.ts    VidCore embed URL builder + event parsing
+src/lib/library.ts    My List / Continue Watching (client, localStorage)
+src/lib/types.ts      shared types
+```
+
+## 3. Environment
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `TMDB_API_KEY` | yes | TMDB v3 API key **or** v4 read access token (a value starting with `eyJ` is sent as a Bearer token). Server-only. |
+| `TMDB_API_BASE` | no | Alternate API base (e.g. a proxy) for networks that block `api.themoviedb.org`. |
+| `NEXT_PUBLIC_PLAYER_COLOR` | no | Hex without `#`, passed to VidCore `color`/`theme`. Defaults to the brand accent. |
+
+Without `TMDB_API_KEY`, pages render an empty state explaining how to set it instead of crashing.
+
+## 4. Routes
+
+| Route | Rendering | Purpose |
+|-------|-----------|---------|
+| `/` | Static shell + cached data | Hero, rows |
+| `/movies`, `/tv` | Shell + Suspense (searchParams) | Browse with `?genre=&sort=` |
+| `/movie/[id]` | Shell + Suspense (params) | Movie detail |
+| `/tv/[id]` | Shell + Suspense (params) | Series detail, `?season=` |
+| `/watch/movie/[id]` | Shell + Suspense | Player |
+| `/watch/tv/[id]/[season]/[episode]` | Shell + Suspense | Player with episode nav |
+| `/search` | Client | Instant search (`?q=`) |
+| `/library` | Client | My List + Continue Watching |
+| `GET /api/search?q=` | Route handler | Proxies TMDB multi-search (keeps key server-side) |
+| `GET /api/tv/[id]/season/[n]` | Route handler | Season episodes for client-side season switching |
+
+Per Cache Components rules, every `params` / `searchParams` read happens inside a `<Suspense>` boundary, and all TMDB calls are `"use cache"` functions with `cacheLife("hours")` (search uses `"minutes"`).
+
+## 5. TMDB integration (`src/lib/tmdb.ts`)
+
+- Base `https://api.themoviedb.org/3`, images `https://image.tmdb.org/t/p/{size}{path}`.
+- Functions: `getTrending(type, window)`, `getList(type, list)` (popular/top_rated/now_playing/on_the_air), `discover(type, {genre, sort})`, `getMovie(id)`, `getShow(id)`, `getSeason(id, n)`, `getGenres(type)`, `searchMulti(q)`.
+- Detail calls use `append_to_response=images,credits,recommendations,videos` and `include_image_language=en,null` to get title logos.
+- All responses are mapped to slim internal types (`MediaItem`, `MovieDetail`, `ShowDetail`, `Episode`) before leaving the server so client payloads stay small.
+- Requests retry up to 3 times on 429/5xx/network errors.
+- Errors: a 4xx → `null` (detail pages call `notFound()`). Transient failures throw from detail/season functions so they are never cached and `app/error.tsx` offers a retry; list functions swallow them and render an empty row, cached for seconds only.
+
+## 6. VidCore integration (`src/lib/vidcore.ts`)
+
+Embed URLs (TMDB IDs):
+
+```
+https://vidcore.org/embed/movie/{tmdbId}
+https://vidcore.org/embed/tv/{tmdbId}/{season}/{episode}
+```
+
+Query parameters used:
+
+| Param | Value | Why |
+|-------|-------|-----|
+| `autoplay` | `true` | User already clicked Play |
+| `color`, `theme` | brand hex (no `#`) | Match the site accent |
+| `startAt` | seconds (optional) | Reserved for future resume support |
+
+Iframe attributes: `allowfullscreen`, `allow="autoplay; encrypted-media; fullscreen; picture-in-picture"`, `referrerPolicy="origin"`, no `sandbox` (the player needs scripts/fullscreen). Container is 100% of a full-bleed 16:9 / viewport-height box.
+
+**Events.** VidCore posts `vidcore:play`, `vidcore:pause`, `vidcore:ended` via `postMessage`. The payload shape isn't documented, so the listener (`parsePlayerEvent`) accepts a string or an object with `type`/`event` containing those names, and ignores messages from any origin that isn't `vidcore.org`.
+- `play` → upsert Continue Watching entry (title, poster, season/episode, timestamp).
+- `ended` on a series → offer "Next episode" with a 10s countdown.
+
+**Errors.** VidCore returns 404 (not indexed), 429 (rate limit), 500 (gateway). These happen inside the iframe, so the player page always shows a small "Having trouble? Reload player" control that re-mounts the iframe.
+
+## 7. Client state (`src/lib/library.ts`)
+
+```ts
+type LibraryItem = { id: number; type: "movie" | "tv"; title: string; poster: string | null; backdrop: string | null; addedAt: number }
+type ProgressItem = LibraryItem & { season?: number; episode?: number; updatedAt: number }
+```
+
+Keys: `cineflex:list`, `cineflex:progress` (max 30, most recent first). Exposed via `useSyncExternalStore` so components re-render on change and across tabs (`storage` event). All access wrapped in try/catch.
+
+## 8. Performance
+
+- `next/image` with TMDB `remotePatterns`; `unoptimized` because TMDB already serves pre-sized images (`w342`, `w780`, `w1280`, `original`). Pick the smallest size that fits.
+- Hero images `priority`; rows lazy.
+- Client components: hero carousel, row scroller buttons, Top 10 toggle, episode panel, player, search, library, list button. Everything else is server components.
+
+## 9. Accessibility
+
+- All interactive elements reachable by keyboard with visible focus rings.
+- Rows scroll natively (trackpad/touch); arrow buttons are extras, hidden from touch.
+- Carousel auto-advance pauses on hover/focus and respects `prefers-reduced-motion`.
+- Images have `alt` = title; decorative backdrops `alt=""`.
