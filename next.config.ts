@@ -1,9 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  images: {
+    // TMDB already serves pre-sized images; skip the optimizer.
+    unoptimized: true,
+    remotePatterns: [{ protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" }],
+  },
   turbopack: {
     rules: {
       "*.css": {
