@@ -3,10 +3,10 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Cineflex — Movies & Series",
-    short_name: "Cineflex",
+    name: "CineFlex — Movies & Series",
+    short_name: "CineFlex",
     description: "Discover and watch movies and TV series.",
-    start_url: "/?source=pwa",
+    start_url: "/home?source=pwa",
     scope: "/",
     display: "standalone",
     orientation: "any",

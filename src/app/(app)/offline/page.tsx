@@ -13,7 +13,7 @@ export default function OfflinePage() {
       </span>
       <h1 className="mt-5 text-2xl font-bold tracking-tight">You’re offline</h1>
       <p className="mt-2 max-w-sm text-muted">
-        Cineflex needs a connection to load titles and play videos. Pages you visited recently may still open.
+        CineFlex needs a connection to load titles and play videos. Pages you visited recently may still open.
       </p>
       <RetryButton />
     </main>

@@ -24,7 +24,7 @@ export default async function CollectionPage({ params }: PageProps<"/collection/
 
   return (
     <main className="px-gutter pb-16 pt-10 md:pt-14">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-text">
+      <Link href="/home" className="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-text">
         <ArrowLeft className="size-4" /> Home
       </Link>
       <h1 className="mt-4 text-3xl font-bold tracking-[-0.03em] md:text-4xl">{title}</h1>

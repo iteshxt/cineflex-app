@@ -213,7 +213,7 @@ function Empty({ icon, title, body }: { icon: React.ReactNode; title: string; bo
       <p className="mt-5 text-lg font-medium">{title}</p>
       <p className="mt-1 text-[15px] text-muted">{body}</p>
       <Link
-        href="/"
+        href="/home"
         className="mt-6 inline-flex h-11 items-center rounded-full bg-text px-6 text-sm font-semibold text-black hover:bg-white"
       >
         Browse titles

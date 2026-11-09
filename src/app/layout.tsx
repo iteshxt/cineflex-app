@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
-import { Nav, NavView } from "@/components/nav";
 import { InstallBanner } from "@/components/install-banner";
 import { PwaInit } from "@/components/pwa-init";
 import { ACCENT_BOOT_SCRIPT } from "@/lib/settings-shared";
@@ -17,12 +16,13 @@ const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: "Cineflex — Movies & Series", template: "%s · Cineflex" },
-  description: "Discover and watch movies and TV series.",
-  applicationName: "Cineflex",
-  appleWebApp: { capable: true, title: "Cineflex", statusBarStyle: "black-translucent" },
+  title: { default: "CineFlex — Movies & Series", template: "%s · CineFlex" },
+  description:
+    "CineFlex is a clean, minimal way to discover and watch movies and TV series. No sign-up, no clutter — installable on any device.",
+  applicationName: "CineFlex",
+  appleWebApp: { capable: true, title: "CineFlex", statusBarStyle: "black-translucent" },
   formatDetection: { telephone: false },
-  openGraph: { type: "website", siteName: "Cineflex" },
+  openGraph: { type: "website", siteName: "CineFlex" },
   twitter: { card: "summary_large_image" },
 };
 
@@ -42,10 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Script id="accent-boot" strategy="beforeInteractive">
           {ACCENT_BOOT_SCRIPT}
         </Script>
-        <Suspense fallback={<NavView pathname="" />}>
-          <Nav />
-        </Suspense>
-        <div className="pb-28 md:pb-0 md:pl-rail">{children}</div>
+        {children}
         <PwaInit />
         <Suspense>
           <InstallBanner />

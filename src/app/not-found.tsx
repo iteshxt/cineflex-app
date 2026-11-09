@@ -7,7 +7,7 @@ export default function NotFound() {
       <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] md:text-4xl">This title isn’t playing here.</h1>
       <p className="mt-2 text-muted">It may have been removed, or the link is wrong.</p>
       <Link
-        href="/"
+        href="/home"
         className="mt-6 inline-flex h-11 items-center rounded-full bg-text px-6 text-sm font-semibold text-black hover:bg-white"
       >
         Back to home

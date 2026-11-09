@@ -9,7 +9,7 @@ type Item = { href: string; label: string; icon: LucideIcon; match: (p: string) 
 
 // Search sits in the middle of the main group on both desktop and mobile.
 const MAIN: Item[] = [
-  { href: "/", label: "Home", icon: Home, match: (p) => p === "/" || p.startsWith("/collection") },
+  { href: "/home", label: "Home", icon: Home, match: (p) => p === "/home" || p.startsWith("/collection") },
   { href: "/movies", label: "Movies", icon: Clapperboard, match: (p) => p.startsWith("/movie") },
   { href: "/search", label: "Search", icon: Search, match: (p) => p.startsWith("/search") },
   { href: "/tv", label: "Series", icon: Tv, match: (p) => p === "/tv" || p.startsWith("/tv/") },
@@ -35,8 +35,11 @@ export function NavView({ pathname }: { pathname: string }) {
         aria-label="Primary"
         className="fixed inset-y-0 left-0 z-40 hidden w-rail flex-col items-center bg-gradient-to-r from-bg via-bg/80 to-transparent py-6 md:flex"
       >
-        <Link href="/" aria-label="Cineflex home" className="transition-transform hover:scale-105">
-          <LogoMark className="size-10" />
+        <Link href="/home" aria-label="CineFlex home" className="group flex flex-col items-center gap-1.5">
+          <LogoMark className="size-9 transition-transform group-hover:scale-105" />
+          <span className="text-[11px] font-semibold tracking-[-0.02em] text-text/80 transition-colors group-hover:text-text">
+            CineFlex
+          </span>
         </Link>
         <div className="relative my-auto">
           <ul className="flex flex-col gap-2">
@@ -52,6 +55,20 @@ export function NavView({ pathname }: { pathname: string }) {
           </div>
         </div>
       </nav>
+
+      {/* Mobile brand mark on the home screen (the rail carries it on desktop) */}
+      {pathname === "/home" && (
+        <Link
+          href="/"
+          aria-label="About CineFlex"
+          className="absolute left-4 top-[max(16px,env(safe-area-inset-top))] z-30 flex items-center gap-2 md:hidden"
+        >
+          <LogoMark className="size-7" />
+          <span className="text-[17px] font-semibold tracking-[-0.045em] drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+            CineFlex
+          </span>
+        </Link>
+      )}
 
       {/* Mobile floating pill: icon only, Search in the centre */}
       <nav
