@@ -9,8 +9,10 @@
   --muted: #a1a1aa;
   --faint: #63636b;
   --accent: #f2b84b;
+  /* Text/icons drawn on top of the accent. All presets are light enough for dark ink. */
+  --accent-ink: #09090b;
   --gutter: clamp(16px, 4vw, 56px);
-  --rail: 72px;
+  --rail: 88px;
   color-scheme: dark;
 }
 
@@ -23,6 +25,7 @@
   --color-muted: var(--muted);
   --color-faint: var(--faint);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --spacing-gutter: var(--gutter);
@@ -51,6 +54,32 @@ body {
   border-radius: 6px;
 }
 
+/* Themed scrollbars: quiet by default, accent on hover */
+html {
+  scrollbar-color: rgb(255 255 255 / 0.14) var(--bg);
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.12);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--accent) 70%, transparent);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .no-scrollbar {
   scrollbar-width: none;
 }
@@ -61,6 +90,9 @@ body {
 .thin-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgb(255 255 255 / 0.15) transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
 
 /* Outlined numerals for the Top 10 row */
@@ -103,6 +135,40 @@ body {
   to {
     opacity: 1;
   }
+}
+
+/* Hover preview: grows out of the card it belongs to (transform-origin set inline) */
+@keyframes preview-in {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.preview-in {
+  animation: preview-in 0.26s cubic-bezier(0.2, 0.9, 0.25, 1.05) both;
+}
+
+/* Small "pop" when an icon swaps (e.g. + → ✓) */
+@keyframes pop-in {
+  0% {
+    transform: scale(0.4) rotate(-45deg);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop-in {
+  display: inline-flex;
+  animation: pop-in 0.32s cubic-bezier(0.3, 1.4, 0.5, 1) both;
 }
 
 .fade-in {

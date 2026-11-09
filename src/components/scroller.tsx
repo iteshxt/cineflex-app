@@ -33,7 +33,7 @@ export function Scroller({ children, className = "" }: { children: React.ReactNo
       <div
         ref={ref}
         onScroll={update}
-        className={`no-scrollbar flex snap-x snap-mandatory scroll-px-gutter gap-3 overflow-x-auto px-gutter pb-2 md:gap-4 ${className}`}
+        className={`no-scrollbar flex snap-x snap-mandatory scroll-px-gutter gap-3 overflow-x-auto px-gutter pb-2 md:gap-5 ${className}`}
       >
         {children}
       </div>

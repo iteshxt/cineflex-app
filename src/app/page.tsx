@@ -1,10 +1,12 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { ContinueWatching } from "@/components/continue-watching";
 import { Hero, HeroSkeleton } from "@/components/hero";
-import { Row, RowSkeleton } from "@/components/row";
+import { Row, RowHeader, RowSkeleton } from "@/components/row";
 import { SetupNotice } from "@/components/setup-notice";
 import { TopTen } from "@/components/top-ten";
-import { discover, getHeroItems, getList, getTrending, hasTmdbKey } from "@/lib/tmdb";
+import { COLLECTIONS, type CollectionSlug } from "@/lib/collections";
+import { getGenres, getHeroItems, getTrending, hasTmdbKey } from "@/lib/tmdb";
 
 export default function HomePage() {
   if (!hasTmdbKey()) return <SetupNotice />;
@@ -36,26 +38,39 @@ async function TopTenSection() {
 }
 
 async function Rows() {
-  const [trendingWeek, popularTv, nowPlaying, topMovies, topTv, scifi, animation, crime] = await Promise.all([
-    getTrending("all", "week"),
-    getList("tv", "popular"),
-    getList("movie", "now_playing"),
-    getList("movie", "top_rated"),
-    getList("tv", "top_rated"),
-    discover("movie", { genre: 878 }),
-    discover("movie", { genre: 16 }),
-    discover("tv", { genre: 80 }),
-  ]);
+  const slugs = Object.keys(COLLECTIONS) as CollectionSlug[];
+  const lists = await Promise.all(slugs.map((slug) => COLLECTIONS[slug].fetch(1)));
+  const [first, ...rest] = slugs;
   return (
     <>
-      <Row title="Trending This Week" items={trendingWeek} />
-      <Row title="New in Theaters" items={nowPlaying} href="/movies?sort=new" />
-      <Row title="Popular Series" items={popularTv} href="/tv" />
-      <Row title="Critically Acclaimed Films" items={topMovies} href="/movies?sort=top" />
-      <Row title="Sci-Fi Worlds" items={scifi} href="/movies?genre=878" />
-      <Row title="Binge-worthy Series" items={topTv} href="/tv?sort=top" />
-      <Row title="Animated" items={animation} href="/movies?genre=16" />
-      <Row title="Crime Series" items={crime} href="/tv?genre=80" />
+      <Row title={COLLECTIONS[first].title} items={lists[0]} href={`/collection/${first}`} />
+      <Suspense fallback={null}>
+        <GenreStrip />
+      </Suspense>
+      {rest.map((slug, i) => (
+        <Row key={slug} title={COLLECTIONS[slug].title} items={lists[i + 1]} href={`/collection/${slug}`} />
+      ))}
     </>
+  );
+}
+
+async function GenreStrip() {
+  const genres = await getGenres("movie");
+  if (genres.length === 0) return null;
+  return (
+    <section className="py-5">
+      <RowHeader title="Browse by genre" href="/movies" />
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-gutter">
+        {genres.map((g) => (
+          <Link
+            key={g.id}
+            href={`/movies?genre=${g.id}`}
+            className="shrink-0 rounded-full bg-surface px-4 py-2 text-sm text-muted ring-1 ring-line transition hover:bg-surface-2 hover:text-text hover:ring-accent/40"
+          >
+            {g.name}
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
