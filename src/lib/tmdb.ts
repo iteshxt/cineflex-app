@@ -41,7 +41,8 @@ async function tmdbStrict<T = any>(path: string, params: Params = {}): Promise<T
   const ATTEMPTS = 3;
   for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
     try {
-      const res = await fetch(url, { headers });
+      // Time out stalled connections instead of hanging the page stream.
+      const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000) });
       if (res.ok) return (await res.json()) as T;
       if (res.status !== 429 && res.status < 500) return null;
       if (attempt === ATTEMPTS) console.warn(`[tmdb] ${res.status} ${path}`);
@@ -108,9 +109,13 @@ function toCast(credits: any): CastMember[] {
 
 /* ---------------------------------------------------------------- lists */
 
-export async function getTrending(type: MediaType | "all", window: "day" | "week" = "day"): Promise<MediaItem[]> {
+export async function getTrending(
+  type: MediaType | "all",
+  window: "day" | "week" = "day",
+  page = 1,
+): Promise<MediaItem[]> {
   "use cache";
-  const data = await tmdb(`/trending/${type}/${window}`);
+  const data = await tmdb(`/trending/${type}/${window}`, { page });
   if (data) cacheLife("hours");
   else cacheLife("seconds");
   return toItems(data?.results, type === "all" ? undefined : type);
@@ -118,9 +123,9 @@ export async function getTrending(type: MediaType | "all", window: "day" | "week
 
 export type ListName = "popular" | "top_rated" | "now_playing" | "upcoming" | "on_the_air" | "airing_today";
 
-export async function getList(type: MediaType, list: ListName): Promise<MediaItem[]> {
+export async function getList(type: MediaType, list: ListName, page = 1): Promise<MediaItem[]> {
   "use cache";
-  const data = await tmdb(`/${type}/${list}`);
+  const data = await tmdb(`/${type}/${list}`, { page });
   if (data) cacheLife("hours");
   else cacheLife("seconds");
   return toItems(data?.results, type);
@@ -133,24 +138,41 @@ const SORTS: Record<MediaType, Record<Sort, string>> = {
   tv: { popular: "popularity.desc", top: "vote_average.desc", new: "first_air_date.desc" },
 };
 
-export async function discover(
-  type: MediaType,
-  opts: { genre?: number; sort?: Sort; page?: number } = {},
-): Promise<MediaItem[]> {
+export type DiscoverOptions = {
+  genre?: number;
+  sort?: Sort;
+  page?: number;
+  /** Decade start year, e.g. 2010 for 2010–2019. */
+  decade?: number;
+  /** Minimum TMDB rating, 0–10. */
+  minRating?: number;
+  /** ISO 639-1 original language, e.g. "hi", "ko". */
+  language?: string;
+};
+
+export async function discover(type: MediaType, opts: DiscoverOptions = {}): Promise<MediaItem[]> {
   "use cache";
   const sort = opts.sort ?? "popular";
   const today = new Date().toISOString().slice(0, 10);
-  const data = await tmdb(`/discover/${type}`, {
+  const dateKey = type === "movie" ? "primary_release_date" : "first_air_date";
+  const from = opts.decade ? `${opts.decade}-01-01` : undefined;
+  const decadeEnd = opts.decade ? `${opts.decade + 9}-12-31` : undefined;
+  // Never list unreleased titles under "Newest", even within the current decade.
+  const to = sort === "new" ? [decadeEnd, today].filter(Boolean).sort()[0] : decadeEnd;
+  // Strict: a network failure must not look like "no titles match these filters".
+  const data = await tmdbStrict(`/discover/${type}`, {
     sort_by: SORTS[type][sort],
     with_genres: opts.genre,
+    with_original_language: opts.language,
     page: opts.page ?? 1,
     include_adult: "false",
-    // Keep "top" and "new" meaningful: enough votes, already released.
-    "vote_count.gte": sort === "top" ? 500 : sort === "new" ? 20 : undefined,
-    [type === "movie" ? "primary_release_date.lte" : "first_air_date.lte"]: sort === "new" ? today : undefined,
+    [`${dateKey}.gte`]: from,
+    [`${dateKey}.lte`]: to,
+    "vote_average.gte": opts.minRating,
+    // Keep rankings meaningful: enough votes for "top" and rating filters.
+    "vote_count.gte": sort === "top" ? 300 : opts.minRating ? 50 : sort === "new" ? 10 : undefined,
   });
-  if (data) cacheLife("hours");
-  else cacheLife("seconds");
+  cacheLife("hours");
   return toItems(data?.results, type);
 }
 
