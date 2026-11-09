@@ -10,7 +10,7 @@ export function SiteFooter() {
     <footer className="border-t border-line px-gutter pb-10 pt-14 text-sm">
       <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div className="max-w-xs">
-          <Link href="/" className="inline-flex items-center gap-2">
+          <Link href="/?welcome" className="inline-flex items-center gap-2">
             <LogoMark className="size-7" />
             <span className="text-[17px] font-semibold tracking-[-0.035em]">CineFlex</span>
           </Link>

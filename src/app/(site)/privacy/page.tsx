@@ -26,6 +26,10 @@ export default function PrivacyPage() {
       <ul>
         <li>No sign-up: we never ask for your name, email, phone number or password.</li>
         <li>No analytics, tracking pixels, fingerprinting or advertising SDKs from CineFlex.</li>
+        <li>
+          One functional cookie (<code>cf_returning</code>) records only that you’ve opened the app, so the site skips the
+          welcome page next time. It contains no identifier.
+        </li>
         <li>No payment information — CineFlex is free.</li>
       </ul>
 

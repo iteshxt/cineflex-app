@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 
 const FLOWS = [
   ["Your list, history, settings, searches", "Your browser only", "Never sent to CineFlex"],
+  ["“Returning visitor” cookie", "Sent to CineFlex with each request", "Only skips the welcome page; no identifier"],
   ["Page and search requests", "CineFlex server (Vercel)", "To show pages and results; standard host logs"],
   ["Title data (names, overviews, episodes)", "TMDB API, via our server", "TMDB sees our server, not you"],
   ["Posters and backdrops", "TMDB image servers", "Your browser loads them directly"],

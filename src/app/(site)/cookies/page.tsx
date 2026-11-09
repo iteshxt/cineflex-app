@@ -5,10 +5,11 @@ import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Cookies & Storage",
-  description: "CineFlex sets no cookies. Here is exactly what it stores in your browser, and why.",
+  description: "CineFlex uses one functional cookie and no tracking. Here is exactly what it stores in your browser, and why.",
 };
 
 const STORAGE = [
+  ["cf_returning", "Cookie (first-party)", "Remembers you’ve opened the app, so the site opens straight to it next time", "1 year"],
   ["cineflex:list", "Local storage", "Titles you added to My List", "Until you remove them"],
   ["cineflex:progress", "Local storage", "Continue Watching (last title / episode opened)", "Until cleared (max 30 items)"],
   ["cineflex:settings", "Local storage", "Accent color and playback preferences", "Until cleared"],
@@ -21,8 +22,8 @@ export default function CookiesPage() {
   return (
     <ProsePage eyebrow="Legal" title="Cookies & Storage" updated={SITE.legalUpdated}>
       <Summary>
-        CineFlex itself sets <strong>no cookies</strong> and uses no tracking. It keeps a few preferences in your browser so
-        the app remembers you — that’s why there’s no cookie banner.
+        CineFlex sets just <strong>one functional cookie</strong> and uses no tracking or advertising cookies. It keeps a few
+        preferences in your browser so the app remembers you — that’s why there’s no cookie banner.
       </Summary>
 
       <h2>What CineFlex stores</h2>
@@ -52,7 +53,8 @@ export default function CookiesPage() {
         </table>
       </div>
       <p>
-        These are strictly functional: without them the app can’t remember your list or settings, but nothing else breaks.
+        These are strictly functional. The cookie only tells the server to skip the welcome page; it holds no identifier. Without
+        any of them the app can’t remember your list or settings, but nothing else breaks.
       </p>
 
       <h2>Third-party cookies</h2>
