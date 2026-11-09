@@ -109,3 +109,11 @@ Keys: `cineflex:list`, `cineflex:progress` (max 30, most recent first). Exposed 
 - Rows scroll natively (trackpad/touch); arrow buttons are extras, hidden from touch.
 - Carousel auto-advance pauses on hover/focus and respects `prefers-reduced-motion`.
 - Images have `alt` = title; decorative backdrops `alt=""`.
+
+## 10. PWA
+
+- **Manifest** (`src/app/manifest.ts`): `id`, `scope`, `start_url=/?source=pwa`, `display: standalone`, dark theme/background, SVG + 192/512 PNG + maskable icons, and Search / Library shortcuts.
+- **Service worker** (`public/sw.js`, registered in production only by `src/lib/pwa.ts`): network-first for page navigations with an `/offline` fallback, cache-first for hashed `/_next/static` assets, stale-while-revalidate for icons and the manifest. API routes, TMDB images and the VidCore player are never cached. Bump `VERSION` to drop old caches. Served with `Cache-Control: no-store` (see `next.config.ts`) so updates roll out.
+- **Install UX:** `beforeinstallprompt` is captured on startup; a dismissible "Install Cineflex" banner and an Install button in Settings call the browser's install dialog. Settings shows manual instructions where the prompt isn't available (iOS Safari, Firefox) and "installed" in standalone mode.
+- **Standalone layout:** `viewport-fit=cover`; the mobile nav pads with `env(safe-area-inset-bottom)`.
+- Installing on Android requires HTTPS, so test on the deployed site (or `localhost` in desktop Chrome).
