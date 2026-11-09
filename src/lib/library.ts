@@ -113,3 +113,18 @@ export function removeProgress(id: number, type: MediaType) {
 export function getShowProgress(id: number): ProgressItem | undefined {
   return read<ProgressItem>(PROGRESS_KEY).find((i) => same(i, { id, type: "tv" }));
 }
+
+export function clearProgress() {
+  write(PROGRESS_KEY, []);
+}
+
+export function clearList() {
+  write(LIST_KEY, []);
+}
+
+export function removeFromList(id: number, type: MediaType) {
+  write(
+    LIST_KEY,
+    read<LibraryItem>(LIST_KEY).filter((i) => !same(i, { id, type })),
+  );
+}

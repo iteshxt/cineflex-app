@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from "react";
 import { ChevronDown, EyeOff, Play } from "lucide-react";
 import { tmdbImage } from "@/lib/image";
 import { useProgress } from "@/lib/library";
+import { useSettings } from "@/lib/settings";
 import type { Season, SeasonSummary } from "@/lib/types";
 
 type Props = {
@@ -21,7 +22,9 @@ export function EpisodesPanel({ showId, seasons, initialSeason, current, compact
   const progress = useProgress().find((p) => p.type === "tv" && p.id === showId);
   const [picked, setSeasonNo] = useState<number | null>(null);
   const [cache, setCache] = useState<Record<number, Season>>(initialSeason ? { [initialSeason.number]: initialSeason } : {});
-  const [spoilerSafe, setSpoilerSafe] = useState(false);
+  const defaults = useSettings();
+  const [spoilerChoice, setSpoilerSafe] = useState<boolean | null>(null);
+  const spoilerSafe = spoilerChoice ?? defaults.spoilerProtection;
   const [pending, startTransition] = useTransition();
   const [failed, setFailed] = useState<number | null>(null);
 

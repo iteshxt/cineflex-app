@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Info, Play, Star } from "lucide-react";
 import { tmdbImage } from "@/lib/image";
 import { detailHref, watchHref } from "@/lib/routes";
+import { useSettings } from "@/lib/settings";
 import type { MediaItem } from "@/lib/types";
 
 type HeroItem = MediaItem & { logo: string | null };
@@ -14,7 +15,9 @@ const INTERVAL = 8000;
 
 export function Hero({ items }: { items: HeroItem[] }) {
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [hovered, setPaused] = useState(false);
+  const { heroAutoplay } = useSettings();
+  const paused = hovered || !heroAutoplay;
 
   useEffect(() => {
     if (paused || items.length < 2) return;
