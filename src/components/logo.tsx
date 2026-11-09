@@ -4,7 +4,7 @@ const BACK = "M6.15 9v14l12.2-7Z";
 const FRONT = "M13.65 9v14l12.2-7Z";
 
 /**
- * Cineflex mark: a play triangle with a faded "echo" behind it, separated by a clean gap.
+ * CineFlex mark: a play triangle with a faded "echo" behind it, separated by a clean gap.
  * Drawn in the accent color on a transparent background.
  */
 export function LogoMark({ className = "" }: { className?: string }) {
@@ -35,7 +35,7 @@ export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <LogoMark className="size-7" />
-      <span className="text-[19px] font-semibold tracking-[-0.045em]">cineflex</span>
+      <span className="text-[19px] font-semibold tracking-[-0.035em]">CineFlex</span>
     </span>
   );
 }

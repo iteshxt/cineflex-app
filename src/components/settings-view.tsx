@@ -86,7 +86,7 @@ export function SettingsView() {
       </Section>
 
       <p className="text-xs leading-relaxed text-faint">
-        Cineflex doesn’t host any video. Titles and artwork come from TMDB; playback is provided by a third-party embed.
+        CineFlex doesn’t host any video. Titles and artwork come from TMDB; playback is provided by a third-party embed.
       </p>
     </div>
   );
@@ -103,7 +103,7 @@ function InstallSection() {
           </span>
           <span>
             <span className="block text-[15px] font-medium">
-              {state === "installed" ? "Cineflex is installed" : "Install Cineflex"}
+              {state === "installed" ? "CineFlex is installed" : "Install CineFlex"}
             </span>
             <span className="mt-0.5 block text-[13px] text-muted">
               {state === "installed"

@@ -6,7 +6,7 @@ export function SetupNotice() {
       <KeyRound className="size-6 text-accent" />
       <h1 className="mt-4 text-xl font-semibold tracking-tight">Connect TMDB to load the catalog</h1>
       <p className="mt-2 text-[15px] leading-relaxed text-muted">
-        Cineflex reads titles, artwork and episodes from TMDB. Create a free API key at{" "}
+        CineFlex reads titles, artwork and episodes from TMDB. Create a free API key at{" "}
         <a className="text-text underline underline-offset-4" href="https://www.themoviedb.org/settings/api">
           themoviedb.org/settings/api
         </a>

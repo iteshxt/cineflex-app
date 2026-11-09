@@ -1,4 +1,4 @@
-# Cineflex
+# CineFlex
 
 A clean, minimal movie & series site. Metadata from TMDB, playback via the VidCore embed player.
 
@@ -16,4 +16,4 @@ pnpm dev
 
 Open http://localhost:3000.
 
-Cineflex does not host any video. Playback is provided by a third-party embed.
+CineFlex does not host any video. Playback is provided by a third-party embed.

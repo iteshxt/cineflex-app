@@ -25,7 +25,7 @@ export async function Browse({
     language: filters.lang,
   };
 
-  // Two TMDB pages (40 titles) per Cineflex page.
+  // Two TMDB pages (40 titles) per CineFlex page.
   const [genres, a, b] = await Promise.all([
     getGenres(type),
     discover(type, { ...opts, page: page * 2 - 1 }),

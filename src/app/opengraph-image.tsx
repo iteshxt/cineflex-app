@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "Cineflex — Movies & Series";
+export const alt = "CineFlex — Movies & Series";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -24,7 +24,7 @@ export default async function Image() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
           <img src={`data:image/png;base64,${icon}`} width={128} height={128} alt="" />
-          <div style={{ display: "flex", fontSize: 112, fontWeight: 600, letterSpacing: -5 }}>cineflex</div>
+          <div style={{ display: "flex", fontSize: 112, fontWeight: 600, letterSpacing: -4 }}>CineFlex</div>
         </div>
         <div style={{ marginTop: 40, fontSize: 40, color: "#a1a1aa" }}>Movies and series, beautifully simple.</div>
       </div>

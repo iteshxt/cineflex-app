@@ -41,12 +41,12 @@ export function InstallBanner() {
   return (
     <div
       role="dialog"
-      aria-label="Install Cineflex"
+      aria-label="Install CineFlex"
       className="menu-in fixed inset-x-3 bottom-[calc(max(14px,env(safe-area-inset-bottom))+76px)] z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-surface-2/95 p-3 pl-4 shadow-2xl shadow-black/60 ring-1 ring-white/10 backdrop-blur-xl md:bottom-6 md:left-auto md:right-6 md:mx-0"
     >
       <LogoMark className="size-8 shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">Install Cineflex</p>
+        <p className="text-sm font-semibold">Install CineFlex</p>
         <p className="text-xs text-muted">Full screen, from your home screen.</p>
       </div>
       <button
