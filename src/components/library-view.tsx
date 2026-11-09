@@ -8,6 +8,7 @@ import { tmdbImage } from "@/lib/image";
 import { removeFromList, useMyList, useProgress, type LibraryItem } from "@/lib/library";
 import { detailHref } from "@/lib/routes";
 import { ProgressCard } from "./continue-watching";
+import { Select } from "./select";
 
 type Tab = "list" | "watching";
 type TypeFilter = "all" | "movie" | "tv";
@@ -58,16 +59,17 @@ export function LibraryView() {
                 ["tv", "Series"],
               ]}
             />
-            <select
-              aria-label="Sort"
+            <Select
+              label="Sort"
               value={sort}
-              onChange={(e) => setSort(e.target.value as Sort)}
-              className="h-9 rounded-full bg-surface px-3 text-[13px] text-muted outline-none ring-1 ring-line hover:text-text"
-            >
-              <option value="added">Recently added</option>
-              <option value="title">Title A–Z</option>
-              <option value="year">Newest first</option>
-            </select>
+              onChange={setSort}
+              align="right"
+              options={[
+                { value: "added", label: "Recently added" },
+                { value: "title", label: "Title A–Z" },
+                { value: "year", label: "Newest first" },
+              ]}
+            />
           </div>
         )}
       </div>

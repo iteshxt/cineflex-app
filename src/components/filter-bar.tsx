@@ -126,7 +126,7 @@ function Dropdown({
         <div
           role="listbox"
           aria-label={label}
-          className="thin-scrollbar absolute left-0 top-full z-30 mt-2 max-h-80 w-52 overflow-y-auto rounded-2xl bg-surface-2/95 p-1.5 shadow-2xl shadow-black/60 ring-1 ring-white/10 backdrop-blur-xl"
+          className="menu-in origin-top-left thin-scrollbar absolute left-0 top-full z-30 mt-2 max-h-80 w-52 overflow-y-auto rounded-2xl bg-surface-2/95 p-1.5 shadow-2xl shadow-black/60 ring-1 ring-white/10 backdrop-blur-xl"
         >
           <OptionLink selected={!current} href={href(undefined)} onPick={() => setOpen(false)}>
             Any {label.toLowerCase()}
