@@ -1,4 +1,4 @@
-# Cineflex — Technical Specs
+# CineFlex — Technical Specs
 
 ## 1. Stack
 
@@ -11,7 +11,8 @@
 
 ```
 docs/                 prd.md, specs.md, design.md
-src/app/              routes (see §4)
+src/app/(site)/       public pages: landing, about, FAQ, developer, contact, legal (site header + footer)
+src/app/(app)/        the app: home, browse, detail, player, search, library, settings (nav rail / pill)
 src/components/       UI components (server by default, `"use client"` only where needed)
 src/lib/tmdb.ts       TMDB client (server-only, cached)
 src/lib/vidcore.ts    VidCore embed URL builder + event parsing
@@ -33,7 +34,11 @@ Without `TMDB_API_KEY`, pages render an empty state explaining how to set it ins
 
 | Route | Rendering | Purpose |
 |-------|-----------|---------|
-| `/` | Static shell + cached data | Hero, rows |
+| `/` | Static + cached data | Public landing page (hero with poster wall, features, trending, FAQ teaser) |
+| `/home` | Static shell + cached data | App home: hero, rows |
+| `/about`, `/faq`, `/developer`, `/contact` | Static | Site pages |
+| `/privacy`, `/terms`, `/cookies`, `/disclaimer`, `/dmca`, `/legal` | Static | Legal pages; facts in `src/lib/site.ts` |
+| `/robots.txt`, `/sitemap.xml` | Static | SEO |
 | `/movies`, `/tv` | Shell + Suspense (searchParams) | Browse with `?sort=&genre=&decade=&rating=&lang=&page=` |
 | `/movie/[id]` | Shell + Suspense (params) | Movie detail |
 | `/tv/[id]` | Shell + Suspense (params) | Series detail, `?season=` |
@@ -76,7 +81,7 @@ Query parameters used:
 
 Iframe attributes: `allow="autoplay; encrypted-media; fullscreen; picture-in-picture"`, `referrerPolicy="origin"`. Container fills the viewport.
 
-**Ad shield.** By default the iframe is sandboxed with `allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock`. Leaving out `allow-popups`, `allow-top-navigation` and `allow-modals` stops clicks inside the player from opening ad tabs, redirecting Cineflex, or raising alert dialogs. Ads drawn *inside* the player's own frame can't be removed from outside it. Some players refuse to run when sandboxed, so the player bar has a shield toggle (persisted in `localStorage` under `cineflex:ad-shield`) to turn it off per viewer.
+**Ad shield.** By default the iframe is sandboxed with `allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock`. Leaving out `allow-popups`, `allow-top-navigation` and `allow-modals` stops clicks inside the player from opening ad tabs, redirecting CineFlex, or raising alert dialogs. Ads drawn *inside* the player's own frame can't be removed from outside it. Some players refuse to run when sandboxed, so the player bar has a shield toggle (persisted in `localStorage` under `cineflex:ad-shield`) to turn it off per viewer.
 
 **Events.** VidCore posts `vidcore:play`, `vidcore:pause`, `vidcore:ended` via `postMessage`. The payload shape isn't documented, so the listener (`parsePlayerEvent`) accepts a string or an object with `type`/`event` containing those names, and ignores messages from any origin that isn't `vidcore.org`.
 - `play` → upsert Continue Watching entry (title, poster, season/episode, timestamp).
@@ -114,6 +119,6 @@ Keys: `cineflex:list`, `cineflex:progress` (max 30, most recent first). Exposed 
 
 - **Manifest** (`src/app/manifest.ts`): `id`, `scope`, `start_url=/?source=pwa`, `display: standalone`, dark theme/background, SVG + 192/512 PNG + maskable icons, and Search / Library shortcuts.
 - **Service worker** (`public/sw.js`, registered in production only by `src/lib/pwa.ts`): network-first for page navigations with an `/offline` fallback, cache-first for hashed `/_next/static` assets, stale-while-revalidate for icons and the manifest. API routes, TMDB images and the VidCore player are never cached. Bump `VERSION` to drop old caches. Served with `Cache-Control: no-store` (see `next.config.ts`) so updates roll out.
-- **Install UX:** `beforeinstallprompt` is captured on startup; a dismissible "Install Cineflex" banner and an Install button in Settings call the browser's install dialog. Settings shows manual instructions where the prompt isn't available (iOS Safari, Firefox) and "installed" in standalone mode.
+- **Install UX:** `beforeinstallprompt` is captured on startup; a dismissible "Install CineFlex" banner and an Install button in Settings call the browser's install dialog. Settings shows manual instructions where the prompt isn't available (iOS Safari, Firefox) and "installed" in standalone mode.
 - **Standalone layout:** `viewport-fit=cover`; the mobile nav pads with `env(safe-area-inset-bottom)`.
 - Installing on Android requires HTTPS, so test on the deployed site (or `localhost` in desktop Chrome).

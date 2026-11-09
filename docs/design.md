@@ -1,4 +1,4 @@
-# Cineflex — Design
+# CineFlex — Design
 
 ## 1. Direction
 
@@ -59,7 +59,7 @@ Spacing: 4px base; page gutter `clamp(16px, 4vw, 56px)`; row gap 40px.
 ## 6. Brand
 
 - **Mark:** a rounded play triangle with a faded "echo" triangle behind it, separated by a clean gap — quiet, and it suggests motion. Accent on transparent in the app (`src/components/logo.tsx`); on a dark rounded tile for favicons and app icons (`src/app/icon.svg`). Survives 16px.
-- **Wordmark:** "cineflex", lowercase, Geist semibold, tracking -0.045em, single color.
+- **Wordmark:** "CineFlex" (capital C and F), Geist semibold, tracking -0.035em, single color.
 - **Assets:** `icon.svg` (favicon), `favicon.ico` (16/32/48), `apple-icon.png` (180), `public/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `manifest.ts`, and a generated 1200×630 `opengraph-image`. PNG/ICO files are produced by `scripts/generate-icons.py` from the same geometry.
 
 ## 7. States

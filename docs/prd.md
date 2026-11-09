@@ -1,8 +1,8 @@
-# Cineflex — Product Requirements
+# CineFlex — Product Requirements
 
 ## 1. Summary
 
-Cineflex is a clean, minimal, cinematic web app for discovering and watching movies and TV series. Metadata comes from TMDB. Playback is embedded from the VidCore player (`vidcore.org/embed/...`). There are no accounts: personal state (My List, Continue Watching) lives in the viewer's browser.
+CineFlex is a clean, minimal, cinematic web app for discovering and watching movies and TV series. Metadata comes from TMDB. Playback is embedded from the VidCore player (`vidcore.org/embed/...`). There are no accounts: personal state (My List, Continue Watching) lives in the viewer's browser.
 
 ## 2. Goals
 
@@ -14,7 +14,7 @@ Cineflex is a clean, minimal, cinematic web app for discovering and watching mov
 ## 3. Non-goals (v1)
 
 - User accounts, sync across devices, social features ("Watch together").
-- Hosting or transcoding video. Cineflex only embeds a third-party player.
+- Hosting or transcoding video. CineFlex only embeds a third-party player.
 - Downloads, notifications/reminders, admin tooling.
 - Anime-specific catalog (VidCore documents no anime endpoint).
 
@@ -47,5 +47,5 @@ Cineflex is a clean, minimal, cinematic web app for discovering and watching mov
 ## 7. Risks
 
 - **Provider availability.** VidCore is a third-party aggregator; a title can 404 or the service can rate-limit (429). The player page shows a clear fallback and a link back.
-- **Legal/content.** Cineflex does not host content. The footer and About text state that playback is provided by a third-party embed.
+- **Legal/content.** CineFlex does not host content. The footer and About text state that playback is provided by a third-party embed.
 - **TMDB key.** Required server-side (`TMDB_API_KEY`). Never exposed to the client.
