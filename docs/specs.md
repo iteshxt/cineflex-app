@@ -71,13 +71,19 @@ https://vidcore.org/embed/movie/{tmdbId}
 https://vidcore.org/embed/tv/{tmdbId}/{season}/{episode}
 ```
 
-Query parameters used:
+Query parameters (built by `src/lib/vidcore.ts` from the viewer's settings; booleans only sent when they differ from the player default):
 
-| Param | Value | Why |
-|-------|-------|-----|
-| `autoplay` | `true` | User already clicked Play |
-| `color`, `theme` | brand hex (no `#`) | Match the site accent |
-| `startAt` | seconds (optional) | Reserved for future resume support |
+| Param | Source | Notes |
+|-------|--------|-------|
+| `color`, `theme` | Accent setting (hex, no `#`) | Match the site accent |
+| `autoplay` | Settings → Playback → Autoplay | `true` when on |
+| `title` | Title (+ S/E and episode name) | Shown inside the player |
+| `poster` | TMDB backdrop (`w1280`) | Shown before playback |
+| `lang` | Settings → Player → Audio language | Omitted for "Original" |
+| `disableInfo` | Settings → Player → Subtitle button off | |
+| `disableControls` | Settings → Player → Player settings menu off | |
+| `showRelated` | Settings → Player → Related titles | |
+| `startAt` | Supported by the builder | Not used yet: the player reports no position |
 
 Iframe attributes: `allow="autoplay; encrypted-media; fullscreen; picture-in-picture"`, `referrerPolicy="origin"`. Container fills the viewport.
 
@@ -91,7 +97,7 @@ Iframe attributes: `allow="autoplay; encrypted-media; fullscreen; picture-in-pic
 
 ## 7. Client state (`src/lib/library.ts`, `src/lib/settings.ts`)
 
-Settings live under `cineflex:settings` (`useSettings` / `updateSettings`). The saved accent is applied by a `beforeInteractive` script in the root layout so there is no flash of the default color.
+Settings live under `cineflex:settings` (`useSettings` / `updateSettings`): accent (Yellow, Red, Blue, White — unknown saved colors fall back to Yellow), hero rotation, reduce motion, hover previews, Continue Watching on Home, spoiler protection, autoplay, autoplay next, ad shield, and the player options above. Settings → Your data can export/import a JSON backup of the list, history and settings. The saved accent is applied by a `beforeInteractive` script in the root layout so there is no flash of the default color.
 
 **Background playback.** With Cache Components, Next.js keeps visited pages alive inside React `<Activity>` instead of unmounting them. The player therefore sets the iframe `src` in a `useLayoutEffect` and resets it to `about:blank` in the cleanup, which runs when the page is hidden — so leaving the player stops the video.
 
@@ -122,3 +128,7 @@ Keys: `cineflex:list`, `cineflex:progress` (max 30, most recent first). Exposed 
 - **Install UX:** `beforeinstallprompt` is captured on startup; a dismissible "Install CineFlex" banner and an Install button in Settings call the browser's install dialog. Settings shows manual instructions where the prompt isn't available (iOS Safari, Firefox) and "installed" in standalone mode.
 - **Standalone layout:** `viewport-fit=cover`; the mobile nav pads with `env(safe-area-inset-bottom)`.
 - Installing on Android requires HTTPS, so test on the deployed site (or `localhost` in desktop Chrome).
+
+## 11. First visit vs. returning
+
+`src/proxy.ts` (Next.js proxy, formerly middleware): the first visit to `/` shows the landing page. Requests to any app route set a functional `cf_returning` cookie (1 year, HttpOnly, SameSite=Lax, no identifier); afterwards `/` redirects (307) to `/home`. `/?welcome` always shows the landing page and is linked from the footer and Settings.

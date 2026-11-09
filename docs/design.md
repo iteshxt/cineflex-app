@@ -21,7 +21,7 @@ Principles:
 | `--text` | `#f4f4f5` | Primary text |
 | `--muted` | `#a1a1aa` | Secondary text |
 | `--faint` | `#63636b` | Tertiary, meta separators |
-| `--accent` | `#f2b84b` (warm amber, default) | Rating star, active nav, highlights, player color. User-selectable in Settings (Amber, Coral, Rose, Violet, Sky, Mint, Lime) and applied before first paint. |
+| `--accent` | `#f2b84b` (warm amber, default) | Rating star, active nav, highlights, player color. User-selectable in Settings: Yellow `#f2b84b`, Red `#f25c5c`, Blue `#5b9dff`, White `#f4f4f5`; applied before first paint. |
 | `--accent-ink` | `#09090b` | Text/icons on top of the accent |
 
 Radius: `10px` cards/posters, `999px` buttons and chips, `16px` panels.
@@ -38,8 +38,8 @@ Spacing: 4px base; page gutter `clamp(16px, 4vw, 56px)`; row gap 40px.
 ## 4. Layout
 
 - **Order everywhere:** Home, Movies, **Search** (centre), Series, Library.
-- **Desktop:** fixed 88px left rail: logo at the top; the five 56px icon buttons are vertically centred so Search sits at the middle; Settings sits directly below Library after a hairline. Labels appear as tooltips.
-- **Mobile (<768px):** a floating, icon-only pill (52px targets) with Search in the centre. Settings is reached from a gear on the Library page.
+- **Desktop:** fixed 104px left rail: logo + name at the top; the five 64px icon buttons (28px icons) are vertically centred so Search sits at the middle; Settings sits directly below Library after a hairline. Labels appear as tooltips.
+- **Mobile (<768px):** a floating, icon-only pill (56px targets, 26px icons) with Search in the centre. Settings is reached from a gear on the Library page.
 - **Active page:** no box or fill, only a short accent bar under the icon.
 - Max content width: none for heroes; rows bleed to the right edge so cards peek (signals scroll).
 
