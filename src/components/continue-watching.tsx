@@ -24,11 +24,17 @@ export function ContinueWatching({ title = "Continue Watching" }: { title?: stri
   );
 }
 
-export function ProgressCard({ item }: { item: ProgressItem }) {
+export function ProgressCard({
+  item,
+  className = "w-[260px] shrink-0 snap-start md:w-[300px]",
+}: {
+  item: ProgressItem;
+  className?: string;
+}) {
   const src = tmdbImage(item.backdrop, "w780") ?? tmdbImage(item.poster, "w342");
   const label = item.type === "tv" && item.season ? `S${item.season} · E${item.episode}` : "Movie";
   return (
-    <div className="group relative w-[260px] shrink-0 snap-start md:w-[300px]">
+    <div className={`group relative ${className}`}>
       <Link href={watchHref(item)} className="block">
         <div className="relative aspect-video overflow-hidden rounded-[10px] bg-surface ring-1 ring-line">
           {src && (
@@ -47,16 +53,13 @@ export function ProgressCard({ item }: { item: ProgressItem }) {
               {item.episodeName ? ` — ${item.episodeName}` : ""}
             </p>
           </div>
-          <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/10">
-            <span className="block h-full w-1/2 bg-accent" />
-          </span>
         </div>
       </Link>
       <button
         type="button"
         aria-label={`Remove ${item.title} from Continue Watching`}
         onClick={() => removeProgress(item.id, item.type)}
-        className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/60 text-muted opacity-0 backdrop-blur transition hover:text-text focus-visible:opacity-100 group-hover:opacity-100"
+        className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/60 text-muted opacity-0 backdrop-blur transition hover:text-text focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
       >
         <X className="size-4" />
       </button>
