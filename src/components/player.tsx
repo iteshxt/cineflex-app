@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, ListVideo, RotateCw, ShieldCheck, ShieldOff, X } from "lucide-react";
 import { recordProgress } from "@/lib/library";
+import { updateSettings, useSettings } from "@/lib/settings";
 import { episodeEmbedUrl, movieEmbedUrl, parsePlayerEvent } from "@/lib/vidcore";
 import type { MediaType } from "@/lib/types";
 
@@ -27,46 +28,40 @@ type Props = {
 };
 
 const SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock";
-const SHIELD_KEY = "cineflex:ad-shield";
-
-const shieldListeners = new Set<() => void>();
-
-function readShield() {
-  try {
-    return localStorage.getItem(SHIELD_KEY) !== "off";
-  } catch {
-    return true;
-  }
-}
-
-function writeShield(on: boolean) {
-  try {
-    localStorage.setItem(SHIELD_KEY, on ? "on" : "off");
-  } catch {
-    /* not persisted */
-  }
-  shieldListeners.forEach((l) => l());
-}
-
-function subscribeShield(cb: () => void) {
-  shieldListeners.add(cb);
-  return () => void shieldListeners.delete(cb);
-}
+const noopSubscribe = () => () => {};
 
 const epHref = (id: number, e: Ep) => `/watch/tv/${id}/${e.season}/${e.episode}`;
 
 export function Player({ id, type, title, poster, backdrop, year, backHref, current, prev, next, episodes }: Props) {
   const router = useRouter();
   const [reloadKey, setReloadKey] = useState(0);
-  const shield = useSyncExternalStore(subscribeShield, readShield, () => true);
-  const toggleShield = () => writeShield(!shield);
+  const settings = useSettings();
+  // Mount the frame only after hydration, once saved settings (accent, shield) are known,
+  // so it doesn't load once with defaults and then reload.
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const shield = settings.adShield;
+  const toggleShield = () => updateSettings({ adShield: !shield });
   const [chrome, setChrome] = useState(true);
   const [drawer, setDrawer] = useState(false);
-  const [upNext, setUpNext] = useState<number | null>(null);
+  // seconds left before auto-advancing, "manual" when autoplay-next is off, null when hidden
+  const [upNext, setUpNext] = useState<number | "manual" | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  const color = settings.accent;
   const src =
-    type === "movie" ? movieEmbedUrl(id) : episodeEmbedUrl(id, current?.season ?? 1, current?.episode ?? 1);
+    type === "movie"
+      ? movieEmbedUrl(id, { color })
+      : episodeEmbedUrl(id, current?.season ?? 1, current?.episode ?? 1, { color });
+
+  // Next.js keeps visited pages alive (hidden) for back/forward. Reset transient UI when
+  // this page is hidden so it doesn't come back with a drawer or countdown open.
+  useLayoutEffect(
+    () => () => {
+      setDrawer(false);
+      setUpNext(null);
+    },
+    [],
+  );
 
   const save = useCallback(() => {
     recordProgress({
@@ -92,20 +87,20 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
     const onMessage = (e: MessageEvent) => {
       const ev = parsePlayerEvent(e);
       if (ev === "play") save();
-      if (ev === "ended" && next) setUpNext(10);
+      if (ev === "ended" && next) setUpNext(settings.autoplayNext ? 10 : "manual");
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [save, next]);
+  }, [save, next, settings.autoplayNext]);
 
   // Up-next countdown
   useEffect(() => {
-    if (upNext === null || !next) return;
+    if (typeof upNext !== "number" || !next) return;
     if (upNext <= 0) {
       router.push(epHref(id, next));
       return;
     }
-    const t = setTimeout(() => setUpNext((n) => (n === null ? null : n - 1)), 1000);
+    const t = setTimeout(() => setUpNext((n) => (typeof n === "number" ? n - 1 : n)), 1000);
     return () => clearTimeout(t);
   }, [upNext, next, id, router]);
 
@@ -136,17 +131,14 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
 
   return (
     <div className="fixed inset-0 z-50 bg-black" onMouseMove={poke}>
-      <iframe
+      {hydrated && (
+      <PlayerFrame
         key={`${src}-${reloadKey}-${shield}`}
         src={src}
+        shield={shield}
         title={`${title}${current ? ` S${current.season}E${current.episode}` : ""}`}
-        className="absolute inset-0 h-full w-full border-0"
-        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-        referrerPolicy="origin"
-        // Ad shield: leaving out allow-popups / allow-top-navigation / allow-modals means
-        // clicks inside the player can't open ad tabs, redirect this page, or show alerts.
-        sandbox={shield ? SANDBOX : undefined}
       />
+      )}
 
       {/* Top strip (hover or tap) that brings the bar back without covering the player controls */}
       <div className="absolute inset-x-0 top-0 h-16" onMouseEnter={poke} onPointerDown={poke} />
@@ -233,7 +225,9 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
       {/* Up next */}
       {upNext !== null && next && (
         <div className="absolute bottom-24 right-4 w-72 rounded-2xl bg-bg/90 p-4 shadow-2xl ring-1 ring-line backdrop-blur-xl md:right-8">
-          <p className="text-xs uppercase tracking-[0.16em] text-faint">Up next in {upNext}s</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-faint">
+            {typeof upNext === "number" ? `Up next in ${upNext}s` : "Up next"}
+          </p>
           <p className="mt-1 truncate text-sm font-medium">
             S{next.season} · E{next.episode}
             {next.name ? ` — ${next.name}` : ""}
@@ -296,6 +290,35 @@ function IconLink({ label, href, children }: { label: string; href: string; chil
     >
       {children}
     </Link>
+  );
+}
+
+/**
+ * The embed iframe. Its src is set imperatively so that when Next.js hides this page
+ * (navigating away keeps it alive in an <Activity>), the cleanup can blank the frame and
+ * actually stop playback instead of letting it run in the background.
+ */
+function PlayerFrame({ src, shield, title }: { src: string; shield: boolean; title: string }) {
+  const ref = useRef<HTMLIFrameElement>(null);
+  useLayoutEffect(() => {
+    const frame = ref.current;
+    if (!frame) return;
+    frame.src = src;
+    return () => {
+      frame.src = "about:blank";
+    };
+  }, [src]);
+  return (
+    <iframe
+      ref={ref}
+      title={title}
+      className="absolute inset-0 h-full w-full border-0"
+      allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+      referrerPolicy="origin"
+      // Ad shield: leaving out allow-popups / allow-top-navigation / allow-modals means
+      // clicks inside the player can't open ad tabs, redirect this page, or show alerts.
+      sandbox={shield ? SANDBOX : undefined}
+    />
   );
 }
 

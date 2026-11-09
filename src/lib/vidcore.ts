@@ -1,11 +1,13 @@
 export const VIDCORE_ORIGIN = "https://vidcore.org";
 
-const COLOR = (process.env.NEXT_PUBLIC_PLAYER_COLOR || "f2b84b").replace("#", "");
+const DEFAULT_COLOR = process.env.NEXT_PUBLIC_PLAYER_COLOR || "f2b84b";
 
-type EmbedOptions = { autoplay?: boolean; startAt?: number };
+/** `color` is the player accent as hex, with or without '#'. */
+type EmbedOptions = { autoplay?: boolean; startAt?: number; color?: string };
 
 function withParams(path: string, opts: EmbedOptions) {
-  const params = new URLSearchParams({ color: COLOR, theme: COLOR });
+  const color = (opts.color || DEFAULT_COLOR).replace("#", "");
+  const params = new URLSearchParams({ color, theme: color });
   if (opts.autoplay ?? true) params.set("autoplay", "true");
   if (opts.startAt && opts.startAt > 0) params.set("startAt", String(Math.floor(opts.startAt)));
   return `${VIDCORE_ORIGIN}${path}?${params}`;
