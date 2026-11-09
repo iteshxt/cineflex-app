@@ -19,7 +19,7 @@ export function PosterCard({
     <div className={`shrink-0 snap-start ${className}`}>
       <HoverPreview item={item}>
         <Link href={detailHref(item)} className="group block">
-          <div className="relative aspect-[2/3] overflow-hidden rounded-[10px] bg-surface ring-1 ring-line">
+          <div data-preview-source className="relative aspect-[2/3] overflow-hidden rounded-[10px] bg-surface ring-1 ring-line">
             {src ? (
               <Image
                 src={src}

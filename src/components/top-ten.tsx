@@ -62,7 +62,7 @@ export function TopTen({
                 >
                   {i + 1}
                 </span>
-                <div className="relative aspect-[2/3] w-[128px] overflow-hidden rounded-[10px] bg-surface ring-1 ring-line md:w-[175px] 2xl:w-[205px]">
+                <div data-preview-source className="relative aspect-[2/3] w-[128px] overflow-hidden rounded-[10px] bg-surface ring-1 ring-line md:w-[175px] 2xl:w-[205px]">
                   {src && (
                     <Image
                       src={src}
