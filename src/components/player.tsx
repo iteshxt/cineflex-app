@@ -1,14 +1,41 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, ListVideo, RotateCw, ShieldCheck, ShieldOff, X } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  ListVideo,
+  Maximize2,
+  Minimize2,
+  RotateCw,
+  ShieldCheck,
+  ShieldOff,
+  Star,
+  X,
+} from "lucide-react";
 import { tmdbImage } from "@/lib/image";
 import { recordProgress } from "@/lib/library";
 import { updateSettings, useSettings } from "@/lib/settings";
-import { episodeEmbedUrl, movieEmbedUrl, parsePlayerEvent } from "@/lib/vidcore";
-import type { MediaType } from "@/lib/types";
+import {
+  episodeEmbedUrl,
+  movieEmbedUrl,
+  parsePlayerEvent,
+} from "@/lib/vidcore";
+import type { MediaItem, MediaType } from "@/lib/types";
+import { Scroller } from "./scroller";
 
 type Ep = { season: number; episode: number; name?: string };
 
@@ -24,11 +51,17 @@ type Props = {
   current?: Ep;
   prev?: Ep | null;
   next?: Ep | null;
-  /** Series only: episode list rendered in the drawer */
+  /** Series only: episode list rendered in the drawer and the sheet */
   episodes?: React.ReactNode;
+  /** Shown in the sheet that slides up over the player */
+  overview?: string;
+  rating?: number;
+  genres?: string[];
+  related?: MediaItem[];
 };
 
-const SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock";
+const SANDBOX =
+  "allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock";
 const noopSubscribe = () => () => {};
 
 const WIDE = "(min-width: 768px)";
@@ -39,28 +72,88 @@ function subscribeWide(cb: () => void) {
   return () => mq.removeEventListener("change", cb);
 }
 
-const epHref = (id: number, e: Ep) => `/watch/tv/${id}/${e.season}/${e.episode}`;
+const epHref = (id: number, e: Ep) =>
+  `/watch/tv/${id}/${e.season}/${e.episode}`;
 
-export function Player({ id, type, title, poster, backdrop, year, backHref, current, prev, next, episodes }: Props) {
+export function Player({
+  id,
+  type,
+  title,
+  poster,
+  backdrop,
+  year,
+  backHref,
+  current,
+  prev,
+  next,
+  episodes,
+  overview,
+  rating,
+  genres = [],
+  related = [],
+}: Props) {
   const router = useRouter();
   const [reloadKey, setReloadKey] = useState(0);
   const settings = useSettings();
   // Mount the frame only after hydration, once saved settings (accent, shield) are known,
   // so it doesn't load once with defaults and then reload.
-  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const hydrated = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
   const shield = settings.adShield;
   const toggleShield = () => updateSettings({ adShield: !shield });
   const [drawer, setDrawer] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const sheet = useRef<HTMLElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const onChange = () => {
+      const el = document.fullscreenElement;
+      // The embed's own fullscreen button makes its iframe the fullscreen element, which
+      // would hide our controls and sheet. Swap it for our page-level fullscreen instead.
+      // This relies on the click's user activation; if the browser refuses, the embed's
+      // fullscreen simply stays as it was.
+      if (el && root.current && el !== root.current && root.current.contains(el)) {
+        void document
+          .exitFullscreen()
+          .then(() => root.current?.requestFullscreen())
+          .catch(() => {});
+        return;
+      }
+      setFullscreen(el === root.current);
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  /** Our fullscreen covers the whole CineFlex player page, so the sheet still works in it. */
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void root.current?.requestFullscreen?.().catch(() => {});
+  };
+  const showSheet = () =>
+    sheet.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const hideSheet = () =>
+    root.current?.scrollTo({ top: 0, behavior: "smooth" });
   // seconds left before auto-advancing, "manual" when autoplay-next is off, null when hidden
   const [upNext, setUpNext] = useState<number | "manual" | null>(null);
-  const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => true);
+  const wide = useSyncExternalStore(
+    subscribeWide,
+    () => window.matchMedia(WIDE).matches,
+    () => true,
+  );
   // Scale the embed up so its own controls are larger. Phones keep 1:1 (already tight on space).
-  const scale = wide ? (PLAYER_SCALE[settings.playerSize] ?? PLAYER_SCALE.large) : 1;
+  const scale = wide
+    ? (PLAYER_SCALE[settings.playerSize] ?? PLAYER_SCALE.large)
+    : 1;
 
   const embed = {
     color: settings.accent,
     autoplay: settings.autoplay,
-    title: current ? `${title} — S${current.season} E${current.episode}` : title,
+    title: current
+      ? `${title} — S${current.season} E${current.episode}`
+      : title,
     poster: tmdbImage(backdrop, "w1280"),
     lang: settings.audioLanguage,
     subtitleButton: settings.subtitleButton,
@@ -94,7 +187,17 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
       episode: current?.episode,
       episodeName: current?.name,
     });
-  }, [id, type, title, poster, backdrop, year, current?.season, current?.episode, current?.name]);
+  }, [
+    id,
+    type,
+    title,
+    poster,
+    backdrop,
+    year,
+    current?.season,
+    current?.episode,
+    current?.name,
+  ]);
 
   // Opening the player counts as starting it: VidCore autoplays, and its play event may not arrive
   // (e.g. mobile autoplay restrictions), so record immediately and refresh on play.
@@ -106,7 +209,8 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
     const onMessage = (e: MessageEvent) => {
       const ev = parsePlayerEvent(e);
       if (ev === "play") save();
-      if (ev === "ended" && next) setUpNext(settings.autoplayNext ? 10 : "manual");
+      if (ev === "ended" && next)
+        setUpNext(settings.autoplayNext ? 10 : "manual");
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
@@ -119,7 +223,10 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
       router.push(epHref(id, next));
       return;
     }
-    const t = setTimeout(() => setUpNext((n) => (typeof n === "number" ? n - 1 : n)), 1000);
+    const t = setTimeout(
+      () => setUpNext((n) => (typeof n === "number" ? n - 1 : n)),
+      1000,
+    );
     return () => clearTimeout(t);
   }, [upNext, next, id, router]);
 
@@ -139,78 +246,133 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
     : [type === "movie" ? "Movie" : "Series", year].filter(Boolean).join(" · ");
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
-      {hydrated && (
-        <PlayerFrame
-          key={`${src}-${reloadKey}-${shield}`}
-          src={src}
-          shield={shield}
-          scale={scale}
-          title={`${title}${current ? ` S${current.season}E${current.episode}` : ""}`}
-        />
-      )}
+    // The page scrolls on its own: the video is pinned (sticky) and a sheet with details and
+    // related titles slides up over it. Scrolling over the video chains through to here.
+    <div
+      ref={root}
+      className="no-scrollbar fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black"
+    >
+      <div className="sticky top-0 h-dvh overflow-hidden">
+        {hydrated && (
+          <PlayerFrame
+            key={`${src}-${reloadKey}-${shield}`}
+            src={src}
+            shield={shield}
+            scale={scale}
+            title={`${title}${current ? ` S${current.season}E${current.episode}` : ""}`}
+          />
+        )}
 
-      {/* Floating frosted-glass controls, top centre: the embedded player keeps its own title at
+        {/* Floating frosted-glass controls, top centre: the embedded player keeps its own title at
           top-left and its server picker at top-right, so the centre is the one place that never
           overlaps. Always visible. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center px-3 pt-[max(12px,env(safe-area-inset-top))]">
-        <div className="pointer-events-auto flex max-w-[min(680px,100%)] items-center gap-1 rounded-full bg-white/[0.08] p-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_12px_40px_-8px_rgb(0_0_0/0.6)] ring-1 ring-white/15 backdrop-blur-2xl backdrop-saturate-150">
-          <PillLink label="Back" href={backHref}>
-            <ArrowLeft className="size-[18px]" />
-          </PillLink>
-          <div className="hidden min-w-0 px-2 sm:block">
-            <p className="truncate text-sm font-semibold leading-tight">{title}</p>
-            <p className="truncate text-[11px] leading-tight text-muted">{subtitle}</p>
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center px-3 pt-[max(12px,env(safe-area-inset-top))]">
+          <div className="pointer-events-auto flex max-w-[min(680px,100%)] items-center gap-1 rounded-full bg-white/[0.08] p-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_12px_40px_-8px_rgb(0_0_0/0.6)] ring-1 ring-white/15 backdrop-blur-2xl backdrop-saturate-150">
+            <PillLink label="Back" href={backHref}>
+              <ArrowLeft className="size-[18px]" />
+            </PillLink>
+            <div className="hidden min-w-0 px-2 sm:block">
+              <p className="truncate text-sm font-semibold leading-tight">
+                {title}
+              </p>
+              <p className="truncate text-[11px] leading-tight text-muted">
+                {subtitle}
+              </p>
+            </div>
+            <span
+              className="mx-0.5 hidden h-6 w-px bg-white/10 sm:block"
+              aria-hidden="true"
+            />
+            <PillButton
+              label={
+                shield
+                  ? "Ad shield on — blocking pop-ups and redirects. Turn off only if the video won't load."
+                  : "Ad shield off"
+              }
+              onClick={toggleShield}
+              active={shield}
+            >
+              {shield ? (
+                <ShieldCheck className="size-[18px]" />
+              ) : (
+                <ShieldOff className="size-[18px]" />
+              )}
+            </PillButton>
+            <PillButton
+              label="Reload player"
+              onClick={() => setReloadKey((k) => k + 1)}
+            >
+              <RotateCw className="size-4" />
+            </PillButton>
+            <PillButton
+              label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+              onClick={toggleFullscreen}
+            >
+              {fullscreen ? (
+                <Minimize2 className="size-4" />
+              ) : (
+                <Maximize2 className="size-4" />
+              )}
+            </PillButton>
+            <PillButton label="More like this" onClick={showSheet}>
+              <LayoutGrid className="size-4" />
+            </PillButton>
+            {type === "tv" && (
+              <>
+                {prev ? (
+                  <PillLink label="Previous episode" href={epHref(id, prev)}>
+                    <ChevronLeft className="size-5" />
+                  </PillLink>
+                ) : null}
+                {next ? (
+                  <PillLink label="Next episode" href={epHref(id, next)}>
+                    <ChevronRight className="size-5" />
+                  </PillLink>
+                ) : null}
+                <PillButton label="Episodes" onClick={() => setDrawer(true)}>
+                  <ListVideo className="size-[18px]" />
+                </PillButton>
+              </>
+            )}
           </div>
-          <span className="mx-0.5 hidden h-6 w-px bg-white/10 sm:block" aria-hidden="true" />
-          <PillButton
-            label={shield ? "Ad shield on — blocking pop-ups and redirects. Turn off only if the video won't load." : "Ad shield off"}
-            onClick={toggleShield}
-            active={shield}
-          >
-            {shield ? <ShieldCheck className="size-[18px]" /> : <ShieldOff className="size-[18px]" />}
-          </PillButton>
-          <PillButton label="Reload player" onClick={() => setReloadKey((k) => k + 1)}>
-            <RotateCw className="size-4" />
-          </PillButton>
-          {type === "tv" && (
-            <>
-              {prev ? (
-                <PillLink label="Previous episode" href={epHref(id, prev)}>
-                  <ChevronLeft className="size-5" />
-                </PillLink>
-              ) : null}
-              {next ? (
-                <PillLink label="Next episode" href={epHref(id, next)}>
-                  <ChevronRight className="size-5" />
-                </PillLink>
-              ) : null}
-              <PillButton label="Episodes" onClick={() => setDrawer(true)}>
-                <ListVideo className="size-[18px]" />
-              </PillButton>
-            </>
-          )}
         </div>
       </div>
+
+      <PlayerSheet
+        ref={sheet}
+        title={title}
+        subtitle={subtitle}
+        overview={overview}
+        rating={rating}
+        genres={genres}
+        related={related}
+        episodes={type === "tv" ? episodes : undefined}
+        onClose={hideSheet}
+      />
 
       {/* Episodes drawer */}
       {episodes && (
         <>
           <div
-            className={`absolute inset-0 bg-black/50 transition-opacity ${drawer ? "opacity-100" : "pointer-events-none opacity-0"}`}
+            className={`fixed inset-0 z-20 bg-black/50 transition-opacity ${drawer ? "opacity-100" : "pointer-events-none opacity-0"}`}
             onClick={() => setDrawer(false)}
           />
           <aside
             aria-label="Episodes"
             aria-hidden={!drawer}
             inert={!drawer}
-            className={`absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-bg/95 p-4 shadow-2xl backdrop-blur-xl transition-transform duration-300 ease-out md:p-5 ${
+            className={`fixed inset-y-0 right-0 z-30 flex w-full max-w-md flex-col bg-bg/95 p-4 shadow-2xl backdrop-blur-xl transition-transform duration-300 ease-out md:p-5 ${
               drawer ? "translate-x-0" : "translate-x-full"
             }`}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-faint">Episodes</h2>
-              <IconButton label="Close episodes" onClick={() => setDrawer(false)}>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-faint">
+                Episodes
+              </h2>
+              <IconButton
+                label="Close episodes"
+                onClick={() => setDrawer(false)}
+              >
                 <X className="size-4" />
               </IconButton>
             </div>
@@ -221,7 +383,7 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
 
       {/* Up next */}
       {upNext !== null && next && (
-        <div className="absolute bottom-24 right-4 w-72 rounded-2xl bg-bg/90 p-4 shadow-2xl ring-1 ring-line backdrop-blur-xl md:right-8">
+        <div className="fixed bottom-24 right-4 z-20 w-72 rounded-2xl bg-bg/90 p-4 shadow-2xl ring-1 ring-line backdrop-blur-xl md:right-8">
           <p className="text-xs uppercase tracking-[0.16em] text-faint">
             {typeof upNext === "number" ? `Up next in ${upNext}s` : "Up next"}
           </p>
@@ -282,7 +444,17 @@ function IconButton({
  * (navigating away keeps it alive in an <Activity>), the cleanup can blank the frame and
  * actually stop playback instead of letting it run in the background.
  */
-function PlayerFrame({ src, shield, scale, title }: { src: string; shield: boolean; scale: number; title: string }) {
+function PlayerFrame({
+  src,
+  shield,
+  scale,
+  title,
+}: {
+  src: string;
+  shield: boolean;
+  scale: number;
+  title: string;
+}) {
   const ref = useRef<HTMLIFrameElement>(null);
   useLayoutEffect(() => {
     const frame = ref.current;
@@ -299,13 +471,131 @@ function PlayerFrame({ src, shield, scale, title }: { src: string; shield: boole
       // Rendered smaller and scaled up so the player's own controls appear larger.
       // Browsers drop the transform in fullscreen, so fullscreen stays 1:1.
       className="absolute left-0 top-0 origin-top-left border-0"
-      style={{ width: `${100 / scale}%`, height: `${100 / scale}%`, transform: scale === 1 ? undefined : `scale(${scale})` }}
+      style={{
+        width: `${100 / scale}%`,
+        height: `${100 / scale}%`,
+        transform: scale === 1 ? undefined : `scale(${scale})`,
+      }}
       allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
       referrerPolicy="origin"
       // Ad shield: leaving out allow-popups / allow-top-navigation / allow-modals means
       // clicks inside the player can't open ad tabs, redirect this page, or show alerts.
       sandbox={shield ? SANDBOX : undefined}
     />
+  );
+}
+
+type SheetProps = {
+  title: string;
+  subtitle: string;
+  overview?: string;
+  rating?: number;
+  genres: string[];
+  related: MediaItem[];
+  episodes?: React.ReactNode;
+  onClose: () => void;
+  ref: React.Ref<HTMLElement>;
+};
+
+/** Frosted sheet below the pinned player; scrolling brings it up over the video. */
+function PlayerSheet({
+  title,
+  subtitle,
+  overview,
+  rating,
+  genres,
+  related,
+  episodes,
+  onClose,
+  ref,
+}: SheetProps) {
+  const items = related.filter((r) => r.backdrop).slice(0, 14);
+  return (
+    <section
+      ref={ref}
+      aria-label="Details and more like this"
+      className="relative z-10 rounded-t-[28px] bg-bg/80 px-gutter pb-10 pt-3 shadow-[0_-24px_60px_-20px_rgb(0_0_0/0.8)] ring-1 ring-white/10 backdrop-blur-2xl backdrop-saturate-150"
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Back to the player"
+        className="group mx-auto flex flex-col items-center gap-1 px-6 py-1 text-faint transition hover:text-text"
+      >
+        <span className="h-1 w-10 rounded-full bg-white/20 transition group-hover:bg-white/40" />
+        <ChevronDown className="size-4" />
+      </button>
+
+      <div className="mt-4">
+        <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+          {title}
+        </h2>
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted">
+          {rating ? (
+            <span className="flex items-center gap-1 text-text">
+              <Star className="size-3.5 fill-accent text-accent" />
+              {rating.toFixed(1)}
+            </span>
+          ) : null}
+          <span>{subtitle}</span>
+          {genres.length > 0 && (
+            <span className="text-faint">· {genres.join(", ")}</span>
+          )}
+        </p>
+        {overview && <p className="mt-3 line-clamp-3 max-w-3xl leading-relaxed text-text/75">{overview}</p>}
+
+        {episodes && (
+          <div className="mt-8">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-faint">Episodes</h3>
+            <div className="flex max-h-[360px] max-w-3xl flex-col">{episodes}</div>
+          </div>
+        )}
+
+        {items.length > 0 && (
+          <div className="mt-8">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-faint">More like this</h3>
+            {/* Full-bleed row: ~3.5 cards on desktop (~2.2 on phones). Arrows on hover, swipe on touch. */}
+            <div className="-mx-gutter @container">
+              <Scroller>
+                {items.map((item) => (
+                  <div
+                    key={`${item.type}-${item.id}`}
+                    className="w-[calc((100cqw-2*var(--gutter)-12px)/2.2)] shrink-0 snap-start md:w-[calc((100cqw-2*var(--gutter)-60px)/3.5)]"
+                  >
+                    <RelatedCard item={item} />
+                  </div>
+                ))}
+              </Scroller>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** Landscape card for the player sheet: backdrop, title and year, links to the title page. */
+function RelatedCard({ item }: { item: MediaItem }) {
+  return (
+    <Link href={`/${item.type}/${item.id}`} className="group block">
+      <div className="relative aspect-video overflow-hidden rounded-2xl bg-surface ring-1 ring-white/10">
+        <Image
+          src={tmdbImage(item.backdrop, "w780")!}
+          alt=""
+          fill
+          sizes="(min-width: 768px) 30vw, 45vw"
+          className="object-cover transition duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+        <div className="absolute inset-x-3 bottom-2.5">
+          <p className="truncate text-sm font-semibold md:text-[15px]">{item.title}</p>
+          <p className="text-xs text-muted">
+            {item.year || "—"} · {item.type === "movie" ? "Movie" : "Series"}
+            {item.rating > 0 ? ` · ★ ${item.rating.toFixed(1)}` : ""}
+          </p>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -337,7 +627,15 @@ function PillButton({
   );
 }
 
-function PillLink({ label, href, children }: { label: string; href: string; children: React.ReactNode }) {
+function PillLink({
+  label,
+  href,
+  children,
+}: {
+  label: string;
+  href: string;
+  children: React.ReactNode;
+}) {
   return (
     <Link href={href} aria-label={label} title={label} className={PILL}>
       {children}

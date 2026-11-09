@@ -32,6 +32,10 @@ async function WatchMovie({ id }: { id: number }) {
       backdrop={movie.backdrop}
       year={movie.year}
       backHref={`/movie/${movie.id}`}
+      overview={movie.overview}
+      rating={movie.rating}
+      genres={movie.genres.map((g) => g.name)}
+      related={movie.recommendations}
     />
   );
 }

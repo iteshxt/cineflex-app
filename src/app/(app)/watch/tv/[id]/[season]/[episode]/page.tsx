@@ -71,6 +71,10 @@ async function WatchEpisode({ id, season, episode }: { id: number; season: numbe
       current={{ season, episode, name: ep?.name }}
       prev={prev}
       next={next}
+      overview={ep?.overview || show.overview}
+      rating={show.rating}
+      genres={show.genres.map((g) => g.name)}
+      related={show.recommendations}
       episodes={
         <EpisodesPanel
           showId={show.id}
