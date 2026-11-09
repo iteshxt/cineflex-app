@@ -72,7 +72,9 @@ Query parameters used:
 | `color`, `theme` | brand hex (no `#`) | Match the site accent |
 | `startAt` | seconds (optional) | Reserved for future resume support |
 
-Iframe attributes: `allowfullscreen`, `allow="autoplay; encrypted-media; fullscreen; picture-in-picture"`, `referrerPolicy="origin"`, no `sandbox` (the player needs scripts/fullscreen). Container is 100% of a full-bleed 16:9 / viewport-height box.
+Iframe attributes: `allow="autoplay; encrypted-media; fullscreen; picture-in-picture"`, `referrerPolicy="origin"`. Container fills the viewport.
+
+**Ad shield.** By default the iframe is sandboxed with `allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock`. Leaving out `allow-popups`, `allow-top-navigation` and `allow-modals` stops clicks inside the player from opening ad tabs, redirecting Cineflex, or raising alert dialogs. Ads drawn *inside* the player's own frame can't be removed from outside it. Some players refuse to run when sandboxed, so the player bar has a shield toggle (persisted in `localStorage` under `cineflex:ad-shield`) to turn it off per viewer.
 
 **Events.** VidCore posts `vidcore:play`, `vidcore:pause`, `vidcore:ended` via `postMessage`. The payload shape isn't documented, so the listener (`parsePlayerEvent`) accepts a string or an object with `type`/`event` containing those names, and ignores messages from any origin that isn't `vidcore.org`.
 - `play` → upsert Continue Watching entry (title, poster, season/episode, timestamp).

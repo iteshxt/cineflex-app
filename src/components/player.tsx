@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, ListVideo, RotateCw, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { ArrowLeft, ChevronLeft, ChevronRight, ListVideo, RotateCw, ShieldCheck, ShieldOff, X } from "lucide-react";
 import { recordProgress } from "@/lib/library";
 import { episodeEmbedUrl, movieEmbedUrl, parsePlayerEvent } from "@/lib/vidcore";
 import type { MediaType } from "@/lib/types";
@@ -26,11 +26,40 @@ type Props = {
   episodes?: React.ReactNode;
 };
 
+const SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock";
+const SHIELD_KEY = "cineflex:ad-shield";
+
+const shieldListeners = new Set<() => void>();
+
+function readShield() {
+  try {
+    return localStorage.getItem(SHIELD_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+function writeShield(on: boolean) {
+  try {
+    localStorage.setItem(SHIELD_KEY, on ? "on" : "off");
+  } catch {
+    /* not persisted */
+  }
+  shieldListeners.forEach((l) => l());
+}
+
+function subscribeShield(cb: () => void) {
+  shieldListeners.add(cb);
+  return () => void shieldListeners.delete(cb);
+}
+
 const epHref = (id: number, e: Ep) => `/watch/tv/${id}/${e.season}/${e.episode}`;
 
 export function Player({ id, type, title, poster, backdrop, year, backHref, current, prev, next, episodes }: Props) {
   const router = useRouter();
   const [reloadKey, setReloadKey] = useState(0);
+  const shield = useSyncExternalStore(subscribeShield, readShield, () => true);
+  const toggleShield = () => writeShield(!shield);
   const [chrome, setChrome] = useState(true);
   const [drawer, setDrawer] = useState(false);
   const [upNext, setUpNext] = useState<number | null>(null);
@@ -108,17 +137,19 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
   return (
     <div className="fixed inset-0 z-50 bg-black" onMouseMove={poke}>
       <iframe
-        key={`${src}-${reloadKey}`}
+        key={`${src}-${reloadKey}-${shield}`}
         src={src}
         title={`${title}${current ? ` S${current.season}E${current.episode}` : ""}`}
         className="absolute inset-0 h-full w-full border-0"
         allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-        allowFullScreen
         referrerPolicy="origin"
+        // Ad shield: leaving out allow-popups / allow-top-navigation / allow-modals means
+        // clicks inside the player can't open ad tabs, redirect this page, or show alerts.
+        sandbox={shield ? SANDBOX : undefined}
       />
 
-      {/* Hover strip that brings the bar back without covering the player controls */}
-      <div className="absolute inset-x-0 top-0 h-16" onMouseEnter={poke} />
+      {/* Top strip (hover or tap) that brings the bar back without covering the player controls */}
+      <div className="absolute inset-x-0 top-0 h-16" onMouseEnter={poke} onPointerDown={poke} />
 
       <header
         onMouseEnter={poke}
@@ -143,6 +174,13 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
           )}
         </div>
         <div className="flex items-center gap-1.5">
+          <IconButton
+            label={shield ? "Ad shield on — click to turn off if the video won't load" : "Ad shield off — click to block pop-ups"}
+            onClick={toggleShield}
+            active={shield}
+          >
+            {shield ? <ShieldCheck className="size-4" /> : <ShieldOff className="size-4" />}
+          </IconButton>
           <IconButton label="Reload player" onClick={() => setReloadKey((k) => k + 1)}>
             <RotateCw className="size-4" />
           </IconButton>
@@ -221,14 +259,27 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
   );
 }
 
-function IconButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+function IconButton({
+  label,
+  onClick,
+  active,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       aria-label={label}
+      aria-pressed={active}
       title={label}
       onClick={onClick}
-      className="flex size-10 items-center justify-center rounded-full bg-white/10 backdrop-blur transition hover:bg-white/20"
+      className={`flex size-10 items-center justify-center rounded-full backdrop-blur transition hover:bg-white/20 ${
+        active ? "bg-accent/15 text-accent" : "bg-white/10"
+      }`}
     >
       {children}
     </button>
