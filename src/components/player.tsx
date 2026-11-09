@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, ListVideo, RotateCw, ShieldCheck, ShieldOff, X } from "lucide-react";
+import { tmdbImage } from "@/lib/image";
 import { recordProgress } from "@/lib/library";
 import { updateSettings, useSettings } from "@/lib/settings";
 import { episodeEmbedUrl, movieEmbedUrl, parsePlayerEvent } from "@/lib/vidcore";
@@ -30,6 +31,14 @@ type Props = {
 const SANDBOX = "allow-scripts allow-same-origin allow-forms allow-presentation allow-orientation-lock";
 const noopSubscribe = () => () => {};
 
+const WIDE = "(min-width: 768px)";
+const PLAYER_SCALE = { standard: 1, large: 1.15, larger: 1.3 } as const;
+function subscribeWide(cb: () => void) {
+  const mq = window.matchMedia(WIDE);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+
 const epHref = (id: number, e: Ep) => `/watch/tv/${id}/${e.season}/${e.episode}`;
 
 export function Player({ id, type, title, poster, backdrop, year, backHref, current, prev, next, episodes }: Props) {
@@ -41,17 +50,27 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
   const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const shield = settings.adShield;
   const toggleShield = () => updateSettings({ adShield: !shield });
-  const [chrome, setChrome] = useState(true);
   const [drawer, setDrawer] = useState(false);
   // seconds left before auto-advancing, "manual" when autoplay-next is off, null when hidden
   const [upNext, setUpNext] = useState<number | "manual" | null>(null);
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => true);
+  // Scale the embed up so its own controls are larger. Phones keep 1:1 (already tight on space).
+  const scale = wide ? (PLAYER_SCALE[settings.playerSize] ?? PLAYER_SCALE.large) : 1;
 
-  const color = settings.accent;
+  const embed = {
+    color: settings.accent,
+    autoplay: settings.autoplay,
+    title: current ? `${title} — S${current.season} E${current.episode}` : title,
+    poster: tmdbImage(backdrop, "w1280"),
+    lang: settings.audioLanguage,
+    subtitleButton: settings.subtitleButton,
+    settingsMenu: settings.playerSettingsMenu,
+    showRelated: settings.showRelated,
+  };
   const src =
     type === "movie"
-      ? movieEmbedUrl(id, { color })
-      : episodeEmbedUrl(id, current?.season ?? 1, current?.episode ?? 1, { color });
+      ? movieEmbedUrl(id, embed)
+      : episodeEmbedUrl(id, current?.season ?? 1, current?.episode ?? 1, embed);
 
   // Next.js keeps visited pages alive (hidden) for back/forward. Reset transient UI when
   // this page is hidden so it doesn't come back with a drawer or countdown open.
@@ -104,18 +123,6 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
     return () => clearTimeout(t);
   }, [upNext, next, id, router]);
 
-  // Auto-hide the top bar. Mouse events over the iframe don't reach us, so the bar
-  // shows when the pointer is over our own chrome/edges and hides after a pause.
-  const poke = useCallback(() => {
-    setChrome(true);
-    clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setChrome(false), 3000);
-  }, []);
-  useEffect(() => {
-    hideTimer.current = setTimeout(() => setChrome(false), 3000);
-    return () => clearTimeout(hideTimer.current);
-  }, []);
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -127,74 +134,64 @@ export function Player({ id, type, title, poster, backdrop, year, backHref, curr
     return () => window.removeEventListener("keydown", onKey);
   }, [drawer, upNext]);
 
-  const show = chrome || drawer;
+  const subtitle = current
+    ? `S${current.season} · E${current.episode}${current.name ? ` — ${current.name}` : ""}`
+    : [type === "movie" ? "Movie" : "Series", year].filter(Boolean).join(" · ");
 
   return (
-    <div className="fixed inset-0 z-50 bg-black" onMouseMove={poke}>
+    <div className="fixed inset-0 z-50 bg-black">
       {hydrated && (
-      <PlayerFrame
-        key={`${src}-${reloadKey}-${shield}`}
-        src={src}
-        shield={shield}
-        title={`${title}${current ? ` S${current.season}E${current.episode}` : ""}`}
-      />
+        <PlayerFrame
+          key={`${src}-${reloadKey}-${shield}`}
+          src={src}
+          shield={shield}
+          scale={scale}
+          title={`${title}${current ? ` S${current.season}E${current.episode}` : ""}`}
+        />
       )}
 
-      {/* Top strip (hover or tap) that brings the bar back without covering the player controls */}
-      <div className="absolute inset-x-0 top-0 h-16" onMouseEnter={poke} onPointerDown={poke} />
-
-      <header
-        onMouseEnter={poke}
-        className={`absolute inset-x-0 top-0 flex items-center gap-3 bg-gradient-to-b from-black/80 to-transparent px-4 pb-10 pt-4 transition-opacity duration-300 md:px-6 ${
-          show ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      >
-        <Link
-          href={backHref}
-          aria-label="Back"
-          className="flex size-10 items-center justify-center rounded-full bg-white/10 backdrop-blur transition hover:bg-white/20"
-        >
-          <ArrowLeft className="size-5" />
-        </Link>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold md:text-base">{title}</p>
-          {current && (
-            <p className="truncate text-xs text-muted">
-              S{current.season} · E{current.episode}
-              {current.name ? ` — ${current.name}` : ""}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          <IconButton
-            label={shield ? "Ad shield on — click to turn off if the video won't load" : "Ad shield off — click to block pop-ups"}
+      {/* Floating frosted-glass controls, top centre: the embedded player keeps its own title at
+          top-left and its server picker at top-right, so the centre is the one place that never
+          overlaps. Always visible. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center px-3 pt-[max(12px,env(safe-area-inset-top))]">
+        <div className="pointer-events-auto flex max-w-[min(680px,100%)] items-center gap-1 rounded-full bg-white/[0.08] p-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_12px_40px_-8px_rgb(0_0_0/0.6)] ring-1 ring-white/15 backdrop-blur-2xl backdrop-saturate-150">
+          <PillLink label="Back" href={backHref}>
+            <ArrowLeft className="size-[18px]" />
+          </PillLink>
+          <div className="hidden min-w-0 px-2 sm:block">
+            <p className="truncate text-sm font-semibold leading-tight">{title}</p>
+            <p className="truncate text-[11px] leading-tight text-muted">{subtitle}</p>
+          </div>
+          <span className="mx-0.5 hidden h-6 w-px bg-white/10 sm:block" aria-hidden="true" />
+          <PillButton
+            label={shield ? "Ad shield on — blocking pop-ups and redirects. Turn off only if the video won't load." : "Ad shield off"}
             onClick={toggleShield}
             active={shield}
           >
-            {shield ? <ShieldCheck className="size-4" /> : <ShieldOff className="size-4" />}
-          </IconButton>
-          <IconButton label="Reload player" onClick={() => setReloadKey((k) => k + 1)}>
+            {shield ? <ShieldCheck className="size-[18px]" /> : <ShieldOff className="size-[18px]" />}
+          </PillButton>
+          <PillButton label="Reload player" onClick={() => setReloadKey((k) => k + 1)}>
             <RotateCw className="size-4" />
-          </IconButton>
+          </PillButton>
           {type === "tv" && (
             <>
               {prev ? (
-                <IconLink label="Previous episode" href={epHref(id, prev)}>
+                <PillLink label="Previous episode" href={epHref(id, prev)}>
                   <ChevronLeft className="size-5" />
-                </IconLink>
+                </PillLink>
               ) : null}
               {next ? (
-                <IconLink label="Next episode" href={epHref(id, next)}>
+                <PillLink label="Next episode" href={epHref(id, next)}>
                   <ChevronRight className="size-5" />
-                </IconLink>
+                </PillLink>
               ) : null}
-              <IconButton label="Episodes" onClick={() => setDrawer(true)}>
-                <ListVideo className="size-4" />
-              </IconButton>
+              <PillButton label="Episodes" onClick={() => setDrawer(true)}>
+                <ListVideo className="size-[18px]" />
+              </PillButton>
             </>
           )}
         </div>
-      </header>
+      </div>
 
       {/* Episodes drawer */}
       {episodes && (
@@ -280,25 +277,12 @@ function IconButton({
   );
 }
 
-function IconLink({ label, href, children }: { label: string; href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      title={label}
-      className="flex size-10 items-center justify-center rounded-full bg-white/10 backdrop-blur transition hover:bg-white/20"
-    >
-      {children}
-    </Link>
-  );
-}
-
 /**
  * The embed iframe. Its src is set imperatively so that when Next.js hides this page
  * (navigating away keeps it alive in an <Activity>), the cleanup can blank the frame and
  * actually stop playback instead of letting it run in the background.
  */
-function PlayerFrame({ src, shield, title }: { src: string; shield: boolean; title: string }) {
+function PlayerFrame({ src, shield, scale, title }: { src: string; shield: boolean; scale: number; title: string }) {
   const ref = useRef<HTMLIFrameElement>(null);
   useLayoutEffect(() => {
     const frame = ref.current;
@@ -312,13 +296,52 @@ function PlayerFrame({ src, shield, title }: { src: string; shield: boolean; tit
     <iframe
       ref={ref}
       title={title}
-      className="absolute inset-0 h-full w-full border-0"
+      // Rendered smaller and scaled up so the player's own controls appear larger.
+      // Browsers drop the transform in fullscreen, so fullscreen stays 1:1.
+      className="absolute left-0 top-0 origin-top-left border-0"
+      style={{ width: `${100 / scale}%`, height: `${100 / scale}%`, transform: scale === 1 ? undefined : `scale(${scale})` }}
       allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
       referrerPolicy="origin"
       // Ad shield: leaving out allow-popups / allow-top-navigation / allow-modals means
       // clicks inside the player can't open ad tabs, redirect this page, or show alerts.
       sandbox={shield ? SANDBOX : undefined}
     />
+  );
+}
+
+const PILL =
+  "flex size-10 shrink-0 items-center justify-center rounded-full text-text/90 transition hover:bg-white/[0.14] hover:text-text";
+
+function PillButton({
+  label,
+  onClick,
+  active,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={active}
+      title={label}
+      onClick={onClick}
+      className={`${PILL} ${active ? "text-accent hover:text-accent" : ""}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function PillLink({ label, href, children }: { label: string; href: string; children: React.ReactNode }) {
+  return (
+    <Link href={href} aria-label={label} title={label} className={PILL}>
+      {children}
+    </Link>
   );
 }
 
