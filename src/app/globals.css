@@ -104,6 +104,99 @@ html {
   -webkit-text-stroke: 2px rgb(255 255 255 / 0.45);
 }
 
+/* Long-form text (legal, about, FAQ) */
+.prose-cf {
+  color: rgb(244 244 245 / 0.78);
+  font-size: 15.5px;
+  line-height: 1.75;
+}
+.prose-cf > * + * {
+  margin-top: 1.1em;
+}
+.prose-cf h2 {
+  margin-top: 2.6em;
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+.prose-cf h3 {
+  margin-top: 1.8em;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.prose-cf h2 + *,
+.prose-cf h3 + * {
+  margin-top: 0.6em;
+}
+.prose-cf a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--accent) 60%, transparent);
+  text-underline-offset: 3px;
+}
+.prose-cf a:hover {
+  color: var(--accent);
+}
+/* Components embedded in prose (cards, callouts) opt out with .not-prose */
+.prose-cf .not-prose a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.prose-cf ul {
+  list-style: none;
+  padding-left: 0;
+}
+.prose-cf ul > li {
+  position: relative;
+  padding-left: 1.25em;
+}
+.prose-cf ul > li + li {
+  margin-top: 0.45em;
+}
+.prose-cf ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0.15em;
+  top: 0.72em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+.prose-cf strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.prose-cf table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.prose-cf th {
+  color: var(--text);
+  font-weight: 600;
+  text-align: left;
+}
+.prose-cf th,
+.prose-cf td {
+  padding: 0.7em 0.8em 0.7em 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.prose-cf code {
+  border-radius: 6px;
+  background: var(--surface-2);
+  padding: 0.1em 0.4em;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.88em;
+  color: var(--text);
+}
+
 .skeleton {
   background: linear-gradient(100deg, var(--surface) 30%, var(--surface-2) 50%, var(--surface) 70%);
   background-size: 300% 100%;
@@ -135,6 +228,19 @@ html {
   to {
     opacity: 1;
   }
+}
+
+/* Landing poster wall: each column drifts vertically (content is duplicated for a seamless loop) */
+@keyframes poster-drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+.poster-drift {
+  animation: poster-drift 70s linear infinite;
 }
 
 /* Dropdown menus */
