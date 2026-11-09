@@ -7,10 +7,11 @@ import { LogoMark } from "./logo";
 
 type Item = { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean };
 
+// Search sits in the middle of the main group on both desktop and mobile.
 const MAIN: Item[] = [
-  { href: "/search", label: "Search", icon: Search, match: (p) => p.startsWith("/search") },
   { href: "/", label: "Home", icon: Home, match: (p) => p === "/" || p.startsWith("/collection") },
   { href: "/movies", label: "Movies", icon: Clapperboard, match: (p) => p.startsWith("/movie") },
+  { href: "/search", label: "Search", icon: Search, match: (p) => p.startsWith("/search") },
   { href: "/tv", label: "Series", icon: Tv, match: (p) => p === "/tv" || p.startsWith("/tv/") },
   { href: "/library", label: "Library", icon: Library, match: (p) => p.startsWith("/library") },
 ];
@@ -28,7 +29,8 @@ export function NavView({ pathname }: { pathname: string }) {
 
   return (
     <>
-      {/* Desktop rail */}
+      {/* Desktop rail: logo on top; the five main items are centred so Search sits at the
+          vertical middle, and Settings hangs directly below Library. */}
       <nav
         aria-label="Primary"
         className="fixed inset-y-0 left-0 z-40 hidden w-rail flex-col items-center bg-gradient-to-r from-bg via-bg/80 to-transparent py-6 md:flex"
@@ -36,23 +38,28 @@ export function NavView({ pathname }: { pathname: string }) {
         <Link href="/" aria-label="Cineflex home" className="transition-transform hover:scale-105">
           <LogoMark className="size-10" />
         </Link>
-        <ul className="my-auto flex flex-col gap-3">
-          {MAIN.map((item) => (
-            <li key={item.href}>
-              <RailLink item={item} active={item.match(pathname)} />
-            </li>
-          ))}
-        </ul>
-        <RailLink item={SETTINGS} active={SETTINGS.match(pathname)} />
+        <div className="relative my-auto">
+          <ul className="flex flex-col gap-2">
+            {MAIN.map((item) => (
+              <li key={item.href}>
+                <RailLink item={item} active={item.match(pathname)} />
+              </li>
+            ))}
+          </ul>
+          <div className="absolute inset-x-0 top-full flex flex-col items-center pt-2">
+            <span className="mb-2 h-px w-6 bg-white/10" aria-hidden="true" />
+            <RailLink item={SETTINGS} active={SETTINGS.match(pathname)} />
+          </div>
+        </div>
       </nav>
 
-      {/* Mobile floating pill */}
+      {/* Mobile floating pill: icon only, Search in the centre */}
       <nav
         aria-label="Primary"
         className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-[max(14px,env(safe-area-inset-bottom))] md:hidden"
       >
         <ul className="flex items-center gap-1 rounded-full bg-surface/85 p-1.5 shadow-2xl shadow-black/60 ring-1 ring-white/10 backdrop-blur-2xl">
-          {[...MAIN, SETTINGS].map(({ href, label, icon: Icon, match }) => {
+          {MAIN.map(({ href, label, icon: Icon, match }) => {
             const active = match(pathname);
             return (
               <li key={href}>
@@ -60,11 +67,12 @@ export function NavView({ pathname }: { pathname: string }) {
                   href={href}
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
-                  className={`flex size-12 items-center justify-center rounded-full transition-colors ${
-                    active ? "bg-accent text-accent-ink" : "text-muted active:bg-white/10"
+                  className={`relative flex size-[52px] items-center justify-center rounded-full transition-colors ${
+                    active ? "text-text" : "text-faint active:text-muted"
                   }`}
                 >
-                  <Icon className="size-[22px]" strokeWidth={active ? 2.25 : 1.85} />
+                  <Icon className="size-[23px]" strokeWidth={active ? 2.2 : 1.85} />
+                  <Marker active={active} className="bottom-1.5" />
                 </Link>
               </li>
             );
@@ -75,6 +83,18 @@ export function NavView({ pathname }: { pathname: string }) {
   );
 }
 
+/** The only active-state indicator: a small accent bar under the icon. */
+function Marker({ active, className = "" }: { active: boolean; className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute left-1/2 h-[3px] -translate-x-1/2 rounded-full bg-accent transition-all duration-300 ${
+        active ? "w-4 opacity-100" : "w-0 opacity-0"
+      } ${className}`}
+    />
+  );
+}
+
 function RailLink({ item, active }: { item: Item; active: boolean }) {
   const { href, label, icon: Icon } = item;
   return (
@@ -82,13 +102,16 @@ function RailLink({ item, active }: { item: Item; active: boolean }) {
       href={href}
       aria-label={label}
       aria-current={active ? "page" : undefined}
-      className={`group relative flex size-14 items-center justify-center rounded-2xl transition-colors ${
-        active ? "bg-white/[0.08] text-text" : "text-faint hover:bg-white/5 hover:text-text"
+      className={`group relative flex size-14 items-center justify-center rounded-2xl transition-colors focus-visible:outline-offset-0 ${
+        active ? "text-text" : "text-faint hover:text-text"
       }`}
     >
-      <Icon className="size-6" strokeWidth={active ? 2.1 : 1.75} />
-      {active && <span className="absolute -left-[15px] h-6 w-[3px] rounded-r-full bg-accent" />}
-      <span className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-text opacity-0 shadow-lg ring-1 ring-line transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+      <Icon
+        className="size-6 transition-transform duration-200 group-hover:scale-110"
+        strokeWidth={active ? 2.1 : 1.75}
+      />
+      <Marker active={active} className="bottom-1.5" />
+      <span className="pointer-events-none absolute left-full ml-3 -translate-x-1 whitespace-nowrap rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-text opacity-0 shadow-lg ring-1 ring-line transition group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100">
         {label}
       </span>
     </Link>
