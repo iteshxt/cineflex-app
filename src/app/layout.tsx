@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
 import { Nav, NavView } from "@/components/nav";
+import { InstallBanner } from "@/components/install-banner";
+import { PwaInit } from "@/components/pwa-init";
 import { ACCENT_BOOT_SCRIPT } from "@/lib/settings-shared";
 import "./globals.css";
 
@@ -19,11 +21,17 @@ export const metadata: Metadata = {
   description: "Discover and watch movies and TV series.",
   applicationName: "Cineflex",
   appleWebApp: { capable: true, title: "Cineflex", statusBarStyle: "black-translucent" },
+  formatDetection: { telephone: false },
   openGraph: { type: "website", siteName: "Cineflex" },
   twitter: { card: "summary_large_image" },
 };
 
-export const viewport: Viewport = { themeColor: "#09090b" };
+export const viewport: Viewport = {
+  themeColor: "#09090b",
+  colorScheme: "dark",
+  // Let the installed app draw under system bars; the nav pads with safe-area insets.
+  viewportFit: "cover",
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -38,6 +46,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Nav />
         </Suspense>
         <div className="pb-28 md:pb-0 md:pl-rail">{children}</div>
+        <PwaInit />
+        <Suspense>
+          <InstallBanner />
+        </Suspense>
       </body>
     </html>
   );

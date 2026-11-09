@@ -2,11 +2,17 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "Cineflex — Movies & Series",
     short_name: "Cineflex",
     description: "Discover and watch movies and TV series.",
-    start_url: "/",
+    start_url: "/?source=pwa",
+    scope: "/",
     display: "standalone",
+    orientation: "any",
+    categories: ["entertainment", "video"],
+    lang: "en",
+    dir: "ltr",
     background_color: "#09090b",
     theme_color: "#09090b",
     icons: [
@@ -14,6 +20,10 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
       { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
+    shortcuts: [
+      { name: "Search", short_name: "Search", url: "/search", icons: [{ src: "/icon-192.png", sizes: "192x192" }] },
+      { name: "My Library", short_name: "Library", url: "/library", icons: [{ src: "/icon-192.png", sizes: "192x192" }] },
     ],
   };
 }

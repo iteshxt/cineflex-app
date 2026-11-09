@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Download, Smartphone } from "lucide-react";
 import { clearList, clearProgress, useMyList, useProgress } from "@/lib/library";
+import { promptInstall, useInstallState } from "@/lib/pwa";
 import { ACCENTS, resetSettings, updateSettings, useSettings } from "@/lib/settings";
 
 export function SettingsView() {
@@ -12,6 +13,8 @@ export function SettingsView() {
 
   return (
     <div className="mt-10 space-y-10">
+      <InstallSection />
+
       <Section title="Appearance" description="The accent colors buttons, highlights and the video player.">
         <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Accent color">
           {ACCENTS.map((a) => {
@@ -86,6 +89,43 @@ export function SettingsView() {
         Cineflex doesn’t host any video. Titles and artwork come from TMDB; playback is provided by a third-party embed.
       </p>
     </div>
+  );
+}
+
+function InstallSection() {
+  const state = useInstallState();
+  return (
+    <Section title="App">
+      <div className="flex items-center justify-between gap-4 rounded-2xl bg-surface px-5 py-4 ring-1 ring-line">
+        <span className="flex items-center gap-4">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+            <Smartphone className="size-5" />
+          </span>
+          <span>
+            <span className="block text-[15px] font-medium">
+              {state === "installed" ? "Cineflex is installed" : "Install Cineflex"}
+            </span>
+            <span className="mt-0.5 block text-[13px] text-muted">
+              {state === "installed"
+                ? "You’re using the app. Open it from your home screen anytime."
+                : state === "available"
+                  ? "Add it to your home screen for a full-screen, app-like experience."
+                  : "In Chrome, open the ⋮ menu and choose “Add to Home screen” or “Install app”. On iPhone, use Share → Add to Home Screen."}
+            </span>
+          </span>
+        </span>
+        {state === "available" && (
+          <button
+            type="button"
+            onClick={() => void promptInstall()}
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-accent-ink transition hover:brightness-110 active:scale-[0.97]"
+          >
+            <Download className="size-4" />
+            Install
+          </button>
+        )}
+      </div>
+    </Section>
   );
 }
 
