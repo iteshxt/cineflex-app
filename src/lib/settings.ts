@@ -1,10 +1,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { DEFAULT_SETTINGS, SETTINGS_KEY, normalizeAccent, type Settings } from "./settings-shared";
 
-import { DEFAULT_SETTINGS, SETTINGS_KEY, type Settings } from "./settings-shared";
-
-export { ACCENTS, DEFAULT_SETTINGS, type Settings } from "./settings-shared";
+export { ACCENTS, AUDIO_LANGUAGES, DEFAULT_SETTINGS, type Settings } from "./settings-shared";
 
 const listeners = new Set<() => void>();
 let cached: { raw: string | null; value: Settings } | null = null;
@@ -19,7 +18,8 @@ function read(): Settings {
   if (cached && cached.raw === raw) return cached.value;
   let value = DEFAULT_SETTINGS;
   try {
-    value = { ...DEFAULT_SETTINGS, ...(raw ? JSON.parse(raw) : {}) };
+    const parsed = raw ? JSON.parse(raw) : {};
+    value = { ...DEFAULT_SETTINGS, ...parsed, accent: normalizeAccent(parsed.accent) };
   } catch {
     /* corrupt: defaults */
   }
@@ -27,11 +27,18 @@ function read(): Settings {
   return value;
 }
 
+/** Push settings that live outside React (CSS variables, root classes) to the document. */
+function applyToDocument(s: Settings) {
+  const root = document.documentElement;
+  root.style.setProperty("--accent", s.accent);
+  root.classList.toggle("reduce-motion", s.reduceMotion);
+}
+
 function subscribe(cb: () => void) {
   listeners.add(cb);
   const onStorage = (e: StorageEvent) => {
     if (e.key === SETTINGS_KEY) {
-      applyAccent(read().accent);
+      applyToDocument(read());
       cb();
     }
   };
@@ -42,12 +49,12 @@ function subscribe(cb: () => void) {
   };
 }
 
-export function applyAccent(hex: string) {
-  document.documentElement.style.setProperty("--accent", hex);
-}
-
 export function useSettings(): Settings {
   return useSyncExternalStore(subscribe, read, () => DEFAULT_SETTINGS);
+}
+
+export function getSettings(): Settings {
+  return read();
 }
 
 export function updateSettings(patch: Partial<Settings>) {
@@ -58,7 +65,7 @@ export function updateSettings(patch: Partial<Settings>) {
     /* not persisted, still applied for this page */
     cached = { raw: null, value: next };
   }
-  if (patch.accent) applyAccent(patch.accent);
+  applyToDocument(next);
   listeners.forEach((l) => l());
 }
 
@@ -68,6 +75,6 @@ export function resetSettings() {
   } catch {
     /* ignore */
   }
-  applyAccent(DEFAULT_SETTINGS.accent);
+  applyToDocument(DEFAULT_SETTINGS);
   listeners.forEach((l) => l());
 }

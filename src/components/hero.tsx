@@ -16,8 +16,8 @@ const INTERVAL = 8000;
 export function Hero({ items }: { items: HeroItem[] }) {
   const [index, setIndex] = useState(0);
   const [hovered, setPaused] = useState(false);
-  const { heroAutoplay } = useSettings();
-  const paused = hovered || !heroAutoplay;
+  const { heroAutoplay, reduceMotion } = useSettings();
+  const paused = hovered || !heroAutoplay || reduceMotion;
 
   useEffect(() => {
     if (paused || items.length < 2) return;

@@ -6,12 +6,14 @@ import { Play, X } from "lucide-react";
 import { tmdbImage } from "@/lib/image";
 import { removeProgress, useProgress, type ProgressItem } from "@/lib/library";
 import { watchHref } from "@/lib/routes";
+import { useSettings } from "@/lib/settings";
 import { RowHeader } from "./row";
 import { Scroller } from "./scroller";
 
 export function ContinueWatching({ title = "Continue Watching" }: { title?: string }) {
   const items = useProgress();
-  if (items.length === 0) return null;
+  const { showContinueWatching } = useSettings();
+  if (items.length === 0 || !showContinueWatching) return null;
   return (
     <section className="py-4">
       <RowHeader title={title} />

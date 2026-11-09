@@ -12,7 +12,7 @@
   /* Text/icons drawn on top of the accent. All presets are light enough for dark ink. */
   --accent-ink: #09090b;
   --gutter: clamp(16px, 4vw, 56px);
-  --rail: 88px;
+  --rail: 104px;
   color-scheme: dark;
 }
 
@@ -279,6 +279,15 @@ html {
 
 .fade-in {
   animation: fade-in 0.5s ease-out both;
+}
+
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

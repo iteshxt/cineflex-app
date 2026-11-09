@@ -128,3 +128,83 @@ export function removeFromList(id: number, type: MediaType) {
     read<LibraryItem>(LIST_KEY).filter((i) => !same(i, { id, type })),
   );
 }
+
+/* ------------------------------------------------------- export / import */
+
+const RECENT_SEARCHES_KEY = "cineflex:recent-searches";
+const SETTINGS_STORAGE_KEY = "cineflex:settings";
+
+export type LibraryBackup = {
+  app: "cineflex";
+  version: 1;
+  exportedAt: string;
+  list: LibraryItem[];
+  progress: ProgressItem[];
+  settings?: unknown;
+};
+
+/** Everything a viewer would want to move to another device, as one JSON object. */
+export function exportLibrary(): LibraryBackup {
+  let settings: unknown;
+  try {
+    settings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) ?? "null") ?? undefined;
+  } catch {
+    settings = undefined;
+  }
+  return {
+    app: "cineflex",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    list: read<LibraryItem>(LIST_KEY),
+    progress: read<ProgressItem>(PROGRESS_KEY),
+    settings,
+  };
+}
+
+const isItem = (x: unknown): x is LibraryItem =>
+  !!x &&
+  typeof x === "object" &&
+  typeof (x as LibraryItem).id === "number" &&
+  ((x as LibraryItem).type === "movie" || (x as LibraryItem).type === "tv") &&
+  typeof (x as LibraryItem).title === "string";
+
+/** Merge a backup into this device. Returns how many titles were added. */
+export function importLibrary(data: unknown): { list: number; progress: number } {
+  if (!data || typeof data !== "object" || (data as LibraryBackup).app !== "cineflex") {
+    throw new Error("This file isn’t a CineFlex backup.");
+  }
+  const backup = data as LibraryBackup;
+  const merge = <T extends LibraryItem>(key: string, incoming: unknown, max = Infinity) => {
+    const current = read<T>(key);
+    const fresh = (Array.isArray(incoming) ? incoming : []).filter(isItem) as T[];
+    const added = fresh.filter((f) => !current.some((c) => same(c, f)));
+    write(key, [...current, ...added].sort((a, b) => b.addedAt - a.addedAt).slice(0, max));
+    return added.length;
+  };
+  const result = { list: merge<LibraryItem>(LIST_KEY, backup.list), progress: merge<ProgressItem>(PROGRESS_KEY, backup.progress, 30) };
+  if (backup.settings && typeof backup.settings === "object") {
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(backup.settings));
+    } catch {
+      /* ignore */
+    }
+  }
+  return result;
+}
+
+export function clearRecentSearches() {
+  try {
+    localStorage.removeItem(RECENT_SEARCHES_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function countRecentSearches(): number {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}

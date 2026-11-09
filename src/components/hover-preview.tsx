@@ -14,6 +14,7 @@ import { Check, ChevronRight, Play, Plus, Star } from "lucide-react";
 import { genreNames } from "@/lib/genres";
 import { tmdbImage } from "@/lib/image";
 import { useInMyList } from "@/lib/library";
+import { getSettings } from "@/lib/settings";
 import { detailHref, watchHref } from "@/lib/routes";
 import type { MediaItem } from "@/lib/types";
 
@@ -96,7 +97,7 @@ export function HoverPreview({
   };
 
   const onEnter = (e: React.PointerEvent) => {
-    if (e.pointerType !== "mouse") return;
+    if (e.pointerType !== "mouse" || !getSettings().hoverPreviews) return;
     cancelClose();
     clearTimeout(openTimer.current);
     openTimer.current = setTimeout(() => {
