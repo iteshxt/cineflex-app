@@ -34,13 +34,15 @@ Without `TMDB_API_KEY`, pages render an empty state explaining how to set it ins
 | Route | Rendering | Purpose |
 |-------|-----------|---------|
 | `/` | Static shell + cached data | Hero, rows |
-| `/movies`, `/tv` | Shell + Suspense (searchParams) | Browse with `?genre=&sort=` |
+| `/movies`, `/tv` | Shell + Suspense (searchParams) | Browse with `?sort=&genre=&decade=&rating=&lang=&page=` |
 | `/movie/[id]` | Shell + Suspense (params) | Movie detail |
 | `/tv/[id]` | Shell + Suspense (params) | Series detail, `?season=` |
 | `/watch/movie/[id]` | Shell + Suspense | Player |
 | `/watch/tv/[id]/[season]/[episode]` | Shell + Suspense | Player with episode nav |
-| `/search` | Client | Instant search (`?q=`) |
-| `/library` | Client | My List + Continue Watching |
+| `/collection/[slug]` | Static params + cached data | "See all" pages for the home rows (`src/lib/collections.ts`) |
+| `/search` | Shell + client | Instant search (`?q=`), recent searches, trending suggestions, top-result card |
+| `/library` | Client | Tabs for My List (type filter, sort, remove) and Continue Watching |
+| `/settings` | Client | Accent color, ad shield, autoplay next, spoiler default, hero rotation, clear data |
 | `GET /api/search?q=` | Route handler | Proxies TMDB multi-search (keeps key server-side) |
 | `GET /api/tv/[id]/season/[n]` | Route handler | Season episodes for client-side season switching |
 
@@ -52,7 +54,7 @@ Per Cache Components rules, every `params` / `searchParams` read happens inside 
 - Functions: `getTrending(type, window)`, `getList(type, list)` (popular/top_rated/now_playing/on_the_air), `discover(type, {genre, sort})`, `getMovie(id)`, `getShow(id)`, `getSeason(id, n)`, `getGenres(type)`, `searchMulti(q)`.
 - Detail calls use `append_to_response=images,credits,recommendations,videos` and `include_image_language=en,null` to get title logos.
 - All responses are mapped to slim internal types (`MediaItem`, `MovieDetail`, `ShowDetail`, `Episode`) before leaving the server so client payloads stay small.
-- Requests retry up to 3 times on 429/5xx/network errors.
+- Requests time out after 8s and retry up to 3 times on 429/5xx/network errors/timeouts.
 - Errors: a 4xx → `null` (detail pages call `notFound()`). Transient failures throw from detail/season functions so they are never cached and `app/error.tsx` offers a retry; list functions swallow them and render an empty row, cached for seconds only.
 
 ## 6. VidCore integration (`src/lib/vidcore.ts`)
@@ -82,7 +84,11 @@ Iframe attributes: `allow="autoplay; encrypted-media; fullscreen; picture-in-pic
 
 **Errors.** VidCore returns 404 (not indexed), 429 (rate limit), 500 (gateway). These happen inside the iframe, so the player page always shows a small "Having trouble? Reload player" control that re-mounts the iframe.
 
-## 7. Client state (`src/lib/library.ts`)
+## 7. Client state (`src/lib/library.ts`, `src/lib/settings.ts`)
+
+Settings live under `cineflex:settings` (`useSettings` / `updateSettings`). The saved accent is applied by a `beforeInteractive` script in the root layout so there is no flash of the default color.
+
+**Background playback.** With Cache Components, Next.js keeps visited pages alive inside React `<Activity>` instead of unmounting them. The player therefore sets the iframe `src` in a `useLayoutEffect` and resets it to `about:blank` in the cleanup, which runs when the page is hidden — so leaving the player stops the video.
 
 ```ts
 type LibraryItem = { id: number; type: "movie" | "tv"; title: string; poster: string | null; backdrop: string | null; addedAt: number }

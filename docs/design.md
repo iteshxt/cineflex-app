@@ -21,7 +21,8 @@ Principles:
 | `--text` | `#f4f4f5` | Primary text |
 | `--muted` | `#a1a1aa` | Secondary text |
 | `--faint` | `#63636b` | Tertiary, meta separators |
-| `--accent` | `#f2b84b` (warm amber) | Rating star, active nav marker, progress, player color |
+| `--accent` | `#f2b84b` (warm amber, default) | Rating star, active nav, highlights, player color. User-selectable in Settings (Amber, Coral, Rose, Violet, Sky, Mint, Lime) and applied before first paint. |
+| `--accent-ink` | `#09090b` | Text/icons on top of the accent |
 
 Radius: `10px` cards/posters, `999px` buttons and chips, `16px` panels.
 Spacing: 4px base; page gutter `clamp(16px, 4vw, 56px)`; row gap 40px.
@@ -36,28 +37,34 @@ Spacing: 4px base; page gutter `clamp(16px, 4vw, 56px)`; row gap 40px.
 
 ## 4. Layout
 
-- **Desktop:** fixed 72px left rail (logo, search, home, movies, series, library). Active item = text-white + 2px amber dot under the icon. Content offset by the rail.
-- **Mobile (<768px):** rail becomes a bottom tab bar (5 items) with safe-area padding. Hero height 70vh.
+- **Desktop:** fixed 88px left rail: logo at the top, 56px icon buttons (search, home, movies, series, library) centred, Settings pinned at the bottom. Active item = soft tile + 3px accent bar on the rail edge; labels appear as tooltips.
+- **Mobile (<768px):** a floating, icon-only pill (48px targets, 6 items incl. Settings) above the safe area. The active item is filled with the accent.
 - Max content width: none for heroes; rows bleed to the right edge so cards peek (signals scroll).
 
 ## 5. Components
 
 - **Hero** — full-bleed backdrop (`w1280`/`original`), left-to-right and bottom gradients, logo or title, meta line, 2-line overview, Play (solid) + More info (ghost). Progress dashes bottom-right; current one fills over the interval.
 - **Poster card** — 2:3, radius 10, subtle scale 1.03 + brightness on hover; title + year below in small type (not overlaid).
-- **Landscape card** (Continue Watching) — 16:9 backdrop, thin amber progress bar, "S2 · E5" label.
+- **Landscape card** (Continue Watching) — 16:9 backdrop, "S2 · E5" label. No progress bar: the embed doesn't report playback position.
 - **Top 10 card** — giant outlined numeral (stroke only, `--faint`) behind/left of the poster.
-- **Row** — title + optional "See all ›"; native horizontal scroll with snap; desktop shows round arrow buttons on hover.
+- **Row** — title + "See all"; at most 10 titles, ending in a "See all" tile that opens `/collection/[slug]`. Native horizontal scroll with snap; desktop shows round arrow buttons on hover. The home page keeps to five curated rows plus a genre strip.
 - **Detail page** — backdrop at top 70vh with gradient; poster on the left at md+; title/logo, meta chips, genres, overview, actions (Watch Now, My List). Below: cast strip, More like this row. Series: episodes panel on the right at xl, below at smaller sizes.
 - **Episodes panel** — season select, spoiler-protection toggle (blurs stills and hides overviews of unwatched episodes), list of rows: still 16:9, "N. Title", runtime, overview (2 lines).
 - **Player** — black page, iframe fills viewport; a top bar (back, title, S/E) that fades after 3s of no mouse movement; series get prev/next and an episodes drawer.
 
-## 6. States
+## 6. Brand
+
+- **Mark:** a rounded play triangle with a faded "echo" triangle behind it, separated by a clean gap — quiet, and it suggests motion. Accent on transparent in the app (`src/components/logo.tsx`); on a dark rounded tile for favicons and app icons (`src/app/icon.svg`). Survives 16px.
+- **Wordmark:** "cineflex", lowercase, Geist semibold, tracking -0.045em, single color.
+- **Assets:** `icon.svg` (favicon), `favicon.ico` (16/32/48), `apple-icon.png` (180), `public/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `manifest.ts`, and a generated 1200×630 `opengraph-image`. PNG/ICO files are produced by `scripts/generate-icons.py` from the same geometry.
+
+## 7. States
 
 - Loading: skeletons with a very soft shimmer, same dimensions as content (no layout shift).
 - Empty: one sentence, one action. Missing TMDB key gets a setup card.
 - Errors: inline, calm, with a retry.
 
-## 7. Accessibility
+## 8. Accessibility
 
 - Contrast: text on images always sits on ≥ 60% black gradient.
 - Focus ring: 2px amber outline with 2px offset.
