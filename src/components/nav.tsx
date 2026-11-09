@@ -36,21 +36,21 @@ export function NavView({ pathname }: { pathname: string }) {
         className="fixed inset-y-0 left-0 z-40 hidden w-rail flex-col items-center bg-gradient-to-r from-bg via-bg/80 to-transparent py-6 md:flex"
       >
         <Link href="/home" aria-label="CineFlex home" className="group flex flex-col items-center gap-1.5">
-          <LogoMark className="size-9 transition-transform group-hover:scale-105" />
-          <span className="text-[11px] font-semibold tracking-[-0.02em] text-text/80 transition-colors group-hover:text-text">
+          <LogoMark className="size-11 transition-transform group-hover:scale-105" />
+          <span className="text-[13px] font-semibold tracking-[-0.02em] text-text/85 transition-colors group-hover:text-text">
             CineFlex
           </span>
         </Link>
         <div className="relative my-auto">
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-3">
             {MAIN.map((item) => (
               <li key={item.href}>
                 <RailLink item={item} active={item.match(pathname)} />
               </li>
             ))}
           </ul>
-          <div className="absolute inset-x-0 top-full flex flex-col items-center pt-2">
-            <span className="mb-2 h-px w-6 bg-white/10" aria-hidden="true" />
+          <div className="absolute inset-x-0 top-full flex flex-col items-center pt-3">
+            <span className="mb-3 h-px w-8 bg-white/10" aria-hidden="true" />
             <RailLink item={SETTINGS} active={SETTINGS.match(pathname)} />
           </div>
         </div>
@@ -84,12 +84,12 @@ export function NavView({ pathname }: { pathname: string }) {
                   href={href}
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
-                  className={`relative flex size-[52px] items-center justify-center rounded-full transition-colors ${
+                  className={`relative flex size-14 items-center justify-center rounded-full transition-colors ${
                     active ? "text-text" : "text-faint active:text-muted"
                   }`}
                 >
-                  <Icon className="size-[23px]" strokeWidth={active ? 2.2 : 1.85} />
-                  <Marker active={active} className="bottom-1.5" />
+                  <Icon className="size-[26px]" strokeWidth={active ? 2.2 : 1.85} />
+                  <Marker active={active} className="bottom-2" />
                 </Link>
               </li>
             );
@@ -119,15 +119,15 @@ function RailLink({ item, active }: { item: Item; active: boolean }) {
       href={href}
       aria-label={label}
       aria-current={active ? "page" : undefined}
-      className={`group relative flex size-14 items-center justify-center rounded-2xl transition-colors focus-visible:outline-offset-0 ${
+      className={`group relative flex size-16 items-center justify-center rounded-2xl transition-colors focus-visible:outline-offset-0 ${
         active ? "text-text" : "text-faint hover:text-text"
       }`}
     >
       <Icon
-        className="size-6 transition-transform duration-200 group-hover:scale-110"
+        className="size-7 transition-transform duration-200 group-hover:scale-110"
         strokeWidth={active ? 2.1 : 1.75}
       />
-      <Marker active={active} className="bottom-1.5" />
+      <Marker active={active} className="bottom-2" />
       <span className="pointer-events-none absolute left-full ml-3 -translate-x-1 whitespace-nowrap rounded-lg bg-surface-2 px-2.5 py-1.5 text-xs font-medium text-text opacity-0 shadow-lg ring-1 ring-line transition group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100">
         {label}
       </span>
