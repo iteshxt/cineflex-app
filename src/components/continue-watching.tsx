@@ -35,6 +35,9 @@ export function ProgressCard({
 }) {
   const src = tmdbImage(item.backdrop, "w780") ?? tmdbImage(item.poster, "w342");
   const label = item.type === "tv" && item.season ? `S${item.season} · E${item.episode}` : "Movie";
+  // Resume info, when the player recorded a position.
+  const pct = item.position && item.duration ? Math.min(100, (item.position / item.duration) * 100) : 0;
+  const left = item.position && item.duration ? Math.max(1, Math.round((item.duration - item.position) / 60)) : 0;
   return (
     <div className={`group relative ${className}`}>
       <Link href={watchHref(item)} className="block">
@@ -52,9 +55,14 @@ export function ProgressCard({
             <p className="truncate text-sm font-medium">{item.title}</p>
             <p className="truncate text-xs text-muted">
               {label}
-              {item.episodeName ? ` — ${item.episodeName}` : ""}
+              {left ? ` · ${left} min left` : item.episodeName ? ` — ${item.episodeName}` : ""}
             </p>
           </div>
+          {pct > 0 && (
+            <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/15">
+              <span className="block h-full bg-accent" style={{ width: `${pct}%` }} />
+            </span>
+          )}
         </div>
       </Link>
       <button

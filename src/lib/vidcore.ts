@@ -50,11 +50,29 @@ export function episodeEmbedUrl(tmdbId: number, season: number, episode: number,
 
 export type PlayerEvent = "play" | "pause" | "ended";
 
+export type PlayerMessage = { type: PlayerEvent; time?: number; duration?: number };
+
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : undefined);
+
+/** Look for a playback position / duration in an event payload, whatever it's called. */
+function readTimes(obj: Record<string, unknown>): { time?: number; duration?: number } {
+  const inner = [obj, obj.data, obj.payload, obj.detail].filter(
+    (x): x is Record<string, unknown> => !!x && typeof x === "object",
+  );
+  for (const o of inner) {
+    const time = num(o.currentTime) ?? num(o.time) ?? num(o.position) ?? num(o.seconds) ?? num(o.current);
+    const duration = num(o.duration) ?? num(o.total) ?? num(o.length);
+    if (time !== undefined || duration !== undefined) return { time, duration };
+  }
+  return {};
+}
+
 /**
  * VidCore documents `vidcore:play`, `vidcore:pause` and `vidcore:ended` postMessage events
- * but not their payload shape, so accept either a bare string or an object carrying the name.
+ * but not their payload shape, so accept either a bare string or an object carrying the name,
+ * and pick up a playback time/duration if one is included.
  */
-export function parsePlayerEvent(e: MessageEvent): PlayerEvent | null {
+export function parsePlayerMessage(e: MessageEvent): PlayerMessage | null {
   let host: string;
   try {
     host = new URL(e.origin).hostname;
@@ -71,12 +89,13 @@ export function parsePlayerEvent(e: MessageEvent): PlayerEvent | null {
       /* keep the string */
     }
   }
-  const name =
-    typeof data === "string"
-      ? data
-      : data && typeof data === "object"
-        ? String((data as Record<string, unknown>).type ?? (data as Record<string, unknown>).event ?? "")
-        : "";
+  const obj = data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+  const name = typeof data === "string" ? data : obj ? String(obj.type ?? obj.event ?? obj.name ?? "") : "";
   const m = /^vidcore:(play|pause|ended)$/.exec(name);
-  return m ? (m[1] as PlayerEvent) : null;
+  if (!m) return null;
+  return { type: m[1] as PlayerEvent, ...(obj ? readTimes(obj) : {}) };
+}
+
+export function parsePlayerEvent(e: MessageEvent): PlayerEvent | null {
+  return parsePlayerMessage(e)?.type ?? null;
 }

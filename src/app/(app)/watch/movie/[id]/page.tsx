@@ -36,6 +36,7 @@ async function WatchMovie({ id }: { id: number }) {
       rating={movie.rating}
       genres={movie.genres.map((g) => g.name)}
       related={movie.recommendations}
+      runtimeMinutes={movie.runtime}
     />
   );
 }
