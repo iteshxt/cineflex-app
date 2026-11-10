@@ -27,12 +27,12 @@ import {
   X,
 } from "lucide-react";
 import { tmdbImage } from "@/lib/image";
-import { recordProgress } from "@/lib/library";
+import { getResumePosition, recordProgress, removeProgress } from "@/lib/library";
 import { updateSettings, useSettings } from "@/lib/settings";
 import {
   episodeEmbedUrl,
   movieEmbedUrl,
-  parsePlayerEvent,
+  parsePlayerMessage,
 } from "@/lib/vidcore";
 import type { MediaItem, MediaType } from "@/lib/types";
 import { Scroller } from "./scroller";
@@ -53,6 +53,8 @@ type Props = {
   next?: Ep | null;
   /** Series only: episode list rendered in the drawer and the sheet */
   episodes?: React.ReactNode;
+  /** Length in minutes (from TMDB), used for the resume bar until the player reports one. */
+  runtimeMinutes?: number | null;
   /** Shown in the sheet that slides up over the player */
   overview?: string;
   rating?: number;
@@ -91,6 +93,7 @@ export function Player({
   rating,
   genres = [],
   related = [],
+  runtimeMinutes,
 }: Props) {
   const router = useRouter();
   const [reloadKey, setReloadKey] = useState(0);
@@ -169,7 +172,13 @@ export function Player({
     ? (PLAYER_SCALE[settings.playerSize] ?? PLAYER_SCALE.large)
     : 1;
 
+  // Where to start: the saved position for this title/episode (read once, on the client).
+  const [startAt, setStartAt] = useState(() =>
+    typeof window === "undefined" ? 0 : getResumePosition(id, type, current?.season, current?.episode),
+  );
+
   const embed = {
+    startAt,
     color: settings.accent,
     autoplay: settings.autoplay,
     title: current
@@ -196,29 +205,58 @@ export function Player({
     [],
   );
 
-  const save = useCallback(() => {
-    recordProgress({
-      id,
-      type,
-      title,
-      poster,
-      backdrop,
-      year,
-      season: current?.season,
-      episode: current?.episode,
-      episodeName: current?.name,
-    });
-  }, [
-    id,
-    type,
-    title,
-    poster,
-    backdrop,
-    year,
-    current?.season,
-    current?.episode,
-    current?.name,
-  ]);
+  const save = useCallback(
+    (position?: number, duration?: number) => {
+      recordProgress({
+        id,
+        type,
+        title,
+        poster,
+        backdrop,
+        year,
+        season: current?.season,
+        episode: current?.episode,
+        episodeName: current?.name,
+        position: position === undefined ? undefined : Math.floor(position),
+        duration: duration === undefined ? undefined : Math.floor(duration),
+      });
+    },
+    [id, type, title, poster, backdrop, year, current?.season, current?.episode, current?.name],
+  );
+
+  // Playback position. VidCore only reports play/pause/ended, so position is the time spent
+  // playing since the start point, unless an event carries the real time (then that wins).
+  // Seeking inside the player isn't visible to us, so the estimate can drift if you skip around.
+  const position = useRef(startAt);
+  const playingSince = useRef<number | null>(null);
+  const duration = useRef(runtimeMinutes ? runtimeMinutes * 60 : undefined);
+  const currentPosition = useCallback(
+    () => position.current + (playingSince.current ? (Date.now() - playingSince.current) / 1000 : 0),
+    [],
+  );
+  const checkpoint = useCallback(() => {
+    if (playingSince.current === null) return;
+    save(currentPosition(), duration.current);
+  }, [save, currentPosition]);
+  useEffect(() => {
+    const t = setInterval(checkpoint, 15000);
+    const onHide = () => checkpoint();
+    window.addEventListener("pagehide", onHide);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("pagehide", onHide);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [checkpoint]);
+  // Leaving the player (Next hides the page): store where we got to.
+  useLayoutEffect(
+    () => () => {
+      checkpoint();
+      playingSince.current = null;
+    },
+    [checkpoint],
+  );
 
   // Opening the player counts as starting it: VidCore autoplays, and its play event may not arrive
   // (e.g. mobile autoplay restrictions), so record immediately and refresh on play.
@@ -228,22 +266,34 @@ export function Player({
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
-      const ev = parsePlayerEvent(e);
-      if (ev === "play") {
-        save();
+      const msg = parsePlayerMessage(e);
+      if (!msg) return;
+      if (msg.duration) duration.current = msg.duration;
+      if (msg.type === "play") {
+        if (msg.time !== undefined) position.current = msg.time;
+        playingSince.current = Date.now();
+        save(position.current, duration.current);
         holdControls.current = false;
         scheduleHide(1500);
       }
-      if (ev === "pause") {
+      if (msg.type === "pause") {
+        position.current = msg.time ?? currentPosition();
+        playingSince.current = null;
+        save(position.current, duration.current);
         holdControls.current = true;
         setControlsVisible(true);
       }
-      if (ev === "ended" && next)
-        setUpNext(settings.autoplayNext ? 10 : "manual");
+      if (msg.type === "ended") {
+        playingSince.current = null;
+        // Finished: movies leave Continue Watching; episodes keep their place for "next".
+        if (type === "movie") removeProgress(id, "movie");
+        else save(duration.current ?? currentPosition(), duration.current);
+        if (next) setUpNext(settings.autoplayNext ? 10 : "manual");
+      }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [save, next, settings.autoplayNext, scheduleHide]);
+  }, [save, next, settings.autoplayNext, scheduleHide, currentPosition, type, id]);
 
   // Up-next countdown
   useEffect(() => {
@@ -261,6 +311,7 @@ export function Player({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      revealControls();
       if (e.key === "Escape") {
         if (drawer) setDrawer(false);
         else if (upNext !== null) setUpNext(null);
@@ -268,7 +319,7 @@ export function Player({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [drawer, upNext]);
+  }, [drawer, upNext, revealControls]);
 
   const subtitle = current
     ? `S${current.season} · E${current.episode}${current.name ? ` — ${current.name}` : ""}`
@@ -295,14 +346,20 @@ export function Player({
         {/* Floating frosted-glass controls, top centre: the embedded player keeps its own title at
           top-left and its server picker at top-right, so the centre is the one place that never
           overlaps. Always visible. */}
-        {/* Invisible hover/tap zone where the pill lives: brings it back when hidden. */}
-        <div
-          aria-hidden="true"
-          className="absolute left-1/2 top-0 h-[84px] w-[min(560px,70vw)] -translate-x-1/2"
-          onPointerMove={revealControls}
-          onPointerDown={revealControls}
-        />
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center px-3 pt-[max(12px,env(safe-area-inset-top))]">
+        {/* Movement over the video happens inside the embed's frame and never reaches this
+            page. So while the controls are hidden, a transparent layer covers the player: the
+            first move or tap lands here and brings the controls back, then the layer steps
+            aside so the video works normally until the controls hide again. */}
+        {!controlsVisible && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 z-[1] cursor-default"
+            onPointerMove={revealControls}
+            onPointerDown={revealControls}
+            onWheel={revealControls}
+          />
+        )}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[2] flex justify-center px-3 pt-[max(12px,env(safe-area-inset-top))]">
           <div
             onPointerEnter={() => {
               holdControls.current = true;
@@ -356,7 +413,12 @@ export function Player({
             </PillButton>
             <PillButton
               label="Reload player"
-              onClick={() => setReloadKey((k) => k + 1)}
+              onClick={() => {
+              position.current = currentPosition();
+              playingSince.current = null;
+              setStartAt(Math.max(0, Math.floor(position.current) - 3));
+              setReloadKey((k) => k + 1);
+            }}
             >
               <RotateCw className="size-4" />
             </PillButton>
