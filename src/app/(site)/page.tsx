@@ -81,7 +81,7 @@ export default function LandingPage() {
 
       {/* ----------------------------------------------------------------- faq */}
       <section className="px-gutter py-20 md:py-28" aria-labelledby="faq">
-        <div className={`${CONTAINER} grid gap-10 md:grid-cols-[1fr_1.4fr]`}>
+        <div className={`${CONTAINER} grid grid-cols-1 gap-10 md:grid-cols-[1fr_1.4fr]`}>
           <div>
             <h2 id="faq" className="text-3xl font-bold tracking-[-0.035em] md:text-4xl">
               Good to know
@@ -215,7 +215,7 @@ function Moment({
   flip?: boolean;
 }) {
   return (
-    <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
+    <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-2 md:gap-16">
       <div className={flip ? "md:order-2" : ""}>
         <p className="font-mono text-sm text-faint">{index}</p>
         <h2 className="mt-3 text-3xl font-bold tracking-[-0.035em] md:text-[44px] md:leading-[1.05]">{title}</h2>

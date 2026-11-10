@@ -41,7 +41,7 @@ export function SettingsView() {
   const set = <K extends keyof Settings>(key: K) => (value: Settings[K]) => updateSettings({ [key]: value } as Partial<Settings>);
 
   return (
-    <div className="mt-10 grid gap-10 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-14">
+    <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[190px_minmax(0,1fr)] lg:gap-14">
       {/* Section index */}
       <nav aria-label="Settings sections" className="hidden lg:block">
         <ul className="sticky top-10 space-y-1">

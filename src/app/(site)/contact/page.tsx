@@ -50,7 +50,7 @@ export default function ContactPage() {
           <p className="mt-4 max-w-xl text-lg text-text/75">
             CineFlex is a small independent project. The quickest way to reach it is below.
           </p>
-          <div className="mt-12 grid gap-4 sm:grid-cols-2">
+          <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {CHANNELS.map(({ icon: Icon, title, body, href, cta }) => {
               const external = href.startsWith("http");
               return (

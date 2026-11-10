@@ -8,7 +8,7 @@ import { LogoMark } from "./logo";
 export function SiteFooter() {
   return (
     <footer className="border-t border-line px-gutter pb-10 pt-14 text-sm">
-      <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+      <div className="grid grid-cols-1 gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div className="max-w-xs">
           <Link href="/?welcome" className="inline-flex items-center gap-2">
             <LogoMark className="size-7" />

@@ -58,7 +58,7 @@ export default function DeveloperPage() {
           {/* Products */}
           <section aria-label="Products" className="mt-16 space-y-5">
             <ProductCard product={featured} large />
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               {rest.map((p) => (
                 <ProductCard key={p.name} product={p} />
               ))}
@@ -103,7 +103,7 @@ function ProductCard({ product: p, large = false }: { product: Product; large?: 
   return (
     <article
       className={`group relative isolate overflow-hidden rounded-[28px] bg-surface ring-1 ring-line transition hover:ring-white/15 ${
-        large ? "grid md:grid-cols-[1.1fr_1fr]" : "flex flex-col"
+        large ? "grid grid-cols-1 md:grid-cols-[1.1fr_1fr]" : "flex flex-col"
       }`}
     >
       <Cover product={p} large={large} />

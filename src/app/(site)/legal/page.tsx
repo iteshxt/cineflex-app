@@ -27,7 +27,7 @@ export default function LegalPage() {
       updated={SITE.legalUpdated}
       intro="Everything about how CineFlex works, what it does with data and the rules for using it — in one place."
     >
-      <div className="not-prose grid gap-3 sm:grid-cols-2">
+      <div className="not-prose grid grid-cols-1 gap-3 sm:grid-cols-2">
         {docs.map((d) => (
           <Link
             key={d.href}

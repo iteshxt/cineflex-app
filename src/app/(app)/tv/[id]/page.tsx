@@ -34,7 +34,7 @@ async function ShowContent({ id }: { id: number }) {
   return (
     <>
       <Backdrop path={show.backdrop} />
-      <div className="relative grid gap-10 px-gutter pt-[30svh] md:pt-[34svh] xl:grid-cols-[minmax(0,1fr)_420px] xl:items-end xl:pt-[26svh]">
+      <div className="relative grid grid-cols-[minmax(0,1fr)] gap-10 px-gutter pt-[30svh] md:pt-[34svh] xl:grid-cols-[minmax(0,1fr)_420px] xl:items-end xl:pt-[26svh]">
         <div>
           <DetailHeader item={show} />
           <ResumeLink showId={show.id} />
