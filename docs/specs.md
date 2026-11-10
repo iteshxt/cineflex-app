@@ -132,3 +132,9 @@ Keys: `cineflex:list`, `cineflex:progress` (max 30, most recent first). Exposed 
 ## 11. First visit vs. returning
 
 `src/proxy.ts` (Next.js proxy, formerly middleware): the first visit to `/` shows the landing page. Requests to any app route set a functional `cf_returning` cookie (1 year, HttpOnly, SameSite=Lax, no identifier); afterwards `/` redirects (307) to `/home`. `/?welcome` always shows the landing page and is linked from the footer and Settings.
+
+## 12. Resume and lists
+
+- **Resume:** VidCore only posts play/pause/ended. The player estimates position as time spent playing since the start point (or uses a time from the event payload if one is ever included), checkpoints every 15s, on pause, on tab hide and on leaving the player, and passes it back as `startAt` (minus 5s). Positions under 30s or within 90s of the end aren't resumed; finished movies leave Continue Watching. Seeking inside the embed isn't observable, so the estimate can drift.
+- **Lists:** "My List" stays under `cineflex:list`; viewer-created lists live under `cineflex:lists` as `{ id, name, createdAt, items }`. Title pages have a split button (toggle My List · ▾ save to any list / create one). Library → Lists switches between lists and offers rename/delete. Backups include lists (merged by name on import).
+- **Player controls:** while hidden, a transparent layer over the embed catches the first move/tap/scroll to bring them back, then steps aside so the video is interactive.

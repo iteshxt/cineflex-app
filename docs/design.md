@@ -47,7 +47,7 @@ Spacing: 4px base; page gutter `clamp(16px, 4vw, 56px)`; row gap 40px.
 
 - **Hero** — full-bleed backdrop (`w1280`/`original`), left-to-right and bottom gradients, logo or title, meta line, 2-line overview, Play (solid) + More info (ghost). Progress dashes bottom-right; current one fills over the interval.
 - **Poster card** — 2:3, radius 10, subtle scale 1.03 + brightness on hover; title + year below in small type (not overlaid).
-- **Landscape card** (Continue Watching) — 16:9 backdrop, "S2 · E5" label. No progress bar: the embed doesn't report playback position.
+- **Landscape card** (Continue Watching) — 16:9 backdrop, "S2 · E5" label; a thin accent progress bar and "N min left" once a position has been recorded.
 - **Top 10 card** — giant outlined numeral (stroke only, `--faint`) behind/left of the poster.
 - **Row** — title + "See all"; at most 10 titles, ending in a "See all" tile that opens `/collection/[slug]`. Native horizontal scroll with snap; desktop shows round arrow buttons on hover. The home page keeps to five curated rows plus a genre strip.
 - **Detail page** — backdrop at top 70vh with gradient; poster on the left at md+; title/logo, meta chips, genres, overview, actions (Watch Now, My List). Below: cast strip, More like this row. Series: episodes panel on the right at xl, below at smaller sizes.
