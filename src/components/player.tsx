@@ -105,6 +105,27 @@ export function Player({
   const shield = settings.adShield;
   const toggleShield = () => updateSettings({ adShield: !shield });
   const [drawer, setDrawer] = useState(false);
+
+  // Auto-hiding controls. Pointer movement over the video happens inside the embed's frame
+  // and never reaches this page, so the pill reappears from a hover zone at the top centre,
+  // when hovered, or while the video is paused.
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const holdControls = useRef(false); // hovered, focused or paused
+  const scheduleHide = useCallback((delay = 2500) => {
+    clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => {
+      if (!holdControls.current) setControlsVisible(false);
+    }, delay);
+  }, []);
+  const revealControls = useCallback(() => {
+    setControlsVisible(true);
+    scheduleHide();
+  }, [scheduleHide]);
+  useEffect(() => {
+    scheduleHide(3500);
+    return () => clearTimeout(hideTimer.current);
+  }, [scheduleHide]);
   const root = useRef<HTMLDivElement>(null);
   const sheet = useRef<HTMLElement>(null);
   const [fullscreen, setFullscreen] = useState(false);
@@ -208,13 +229,21 @@ export function Player({
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       const ev = parsePlayerEvent(e);
-      if (ev === "play") save();
+      if (ev === "play") {
+        save();
+        holdControls.current = false;
+        scheduleHide(1500);
+      }
+      if (ev === "pause") {
+        holdControls.current = true;
+        setControlsVisible(true);
+      }
       if (ev === "ended" && next)
         setUpNext(settings.autoplayNext ? 10 : "manual");
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [save, next, settings.autoplayNext]);
+  }, [save, next, settings.autoplayNext, scheduleHide]);
 
   // Up-next countdown
   useEffect(() => {
@@ -266,8 +295,35 @@ export function Player({
         {/* Floating frosted-glass controls, top centre: the embedded player keeps its own title at
           top-left and its server picker at top-right, so the centre is the one place that never
           overlaps. Always visible. */}
+        {/* Invisible hover/tap zone where the pill lives: brings it back when hidden. */}
+        <div
+          aria-hidden="true"
+          className="absolute left-1/2 top-0 h-[84px] w-[min(560px,70vw)] -translate-x-1/2"
+          onPointerMove={revealControls}
+          onPointerDown={revealControls}
+        />
         <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center px-3 pt-[max(12px,env(safe-area-inset-top))]">
-          <div className="pointer-events-auto flex max-w-[min(680px,100%)] items-center gap-1 rounded-full bg-white/[0.08] p-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_12px_40px_-8px_rgb(0_0_0/0.6)] ring-1 ring-white/15 backdrop-blur-2xl backdrop-saturate-150">
+          <div
+            onPointerEnter={() => {
+              holdControls.current = true;
+              setControlsVisible(true);
+            }}
+            onPointerLeave={() => {
+              holdControls.current = false;
+              scheduleHide();
+            }}
+            onFocus={() => {
+              holdControls.current = true;
+              setControlsVisible(true);
+            }}
+            onBlur={() => {
+              holdControls.current = false;
+              scheduleHide();
+            }}
+            className={`flex max-w-[min(680px,100%)] items-center gap-1 rounded-full bg-white/[0.08] p-1 shadow-[inset_0_1px_0_rgb(255_255_255/0.12),0_12px_40px_-8px_rgb(0_0_0/0.6)] ring-1 ring-white/15 backdrop-blur-2xl backdrop-saturate-150 transition duration-300 ease-out ${
+              controlsVisible ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none -translate-y-3 opacity-0"
+            }`}
+          >
             <PillLink label="Back" href={backHref}>
               <ArrowLeft className="size-[18px]" />
             </PillLink>
