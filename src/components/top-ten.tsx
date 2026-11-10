@@ -46,7 +46,7 @@ export function TopTen({
           ))}
         </div>
       </RowHeader>
-      <Scroller key={tab} className="gap-1 md:gap-2">
+      <Scroller key={tab} className="gap-1 pb-4 md:gap-2">
         {items.map((item, i) => {
           const src = tmdbImage(item.poster, "w342");
           return (
