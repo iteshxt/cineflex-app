@@ -13,9 +13,18 @@ export type LibraryItem = {
   addedAt: number;
 };
 
-export type ProgressItem = LibraryItem & { season?: number; episode?: number; episodeName?: string };
+export type ProgressItem = LibraryItem & {
+  season?: number;
+  episode?: number;
+  episodeName?: string;
+  /** Seconds watched into the title/episode (estimated from play/pause if the player doesn't report it). */
+  position?: number;
+  /** Total length in seconds, when known. */
+  duration?: number;
+};
 
 const LIST_KEY = "cineflex:list";
+const LISTS_KEY = "cineflex:lists";
 const PROGRESS_KEY = "cineflex:progress";
 const MAX_PROGRESS = 30;
 
@@ -55,7 +64,7 @@ function write<T>(key: string, value: T[]) {
 function subscribe(cb: () => void) {
   listeners.add(cb);
   const onStorage = (e: StorageEvent) => {
-    if (e.key === LIST_KEY || e.key === PROGRESS_KEY) cb();
+    if (e.key === LIST_KEY || e.key === LISTS_KEY || e.key === PROGRESS_KEY) cb();
   };
   window.addEventListener("storage", onStorage);
   return () => {
@@ -88,6 +97,88 @@ export function useInMyList(id: number, type: MediaType) {
   return [inList, toggle] as const;
 }
 
+/* --------------------------------------------------------- custom lists */
+
+/** A list the viewer created. "My List" (the default) is stored separately under LIST_KEY. */
+export type UserList = { id: string; name: string; createdAt: number; items: LibraryItem[] };
+
+export const DEFAULT_LIST_ID = "my-list";
+export const MAX_LIST_NAME = 40;
+
+export function useLists() {
+  return useSyncExternalStore(
+    subscribe,
+    () => read<UserList>(LISTS_KEY),
+    () => EMPTY as UserList[],
+  );
+}
+
+const newId = () => `l${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+function cleanName(name: string) {
+  return name.trim().replace(/\s+/g, " ").slice(0, MAX_LIST_NAME);
+}
+
+/** Creates a list and returns its id (or null if the name is empty). */
+export function createList(name: string, firstItem?: Omit<LibraryItem, "addedAt">): string | null {
+  const n = cleanName(name);
+  if (!n) return null;
+  const id = newId();
+  const items = firstItem ? [{ ...firstItem, addedAt: Date.now() }] : [];
+  write(LISTS_KEY, [...read<UserList>(LISTS_KEY), { id, name: n, createdAt: Date.now(), items }]);
+  return id;
+}
+
+export function renameList(id: string, name: string) {
+  const n = cleanName(name);
+  if (!n) return;
+  write(
+    LISTS_KEY,
+    read<UserList>(LISTS_KEY).map((l) => (l.id === id ? { ...l, name: n } : l)),
+  );
+}
+
+export function deleteList(id: string) {
+  write(
+    LISTS_KEY,
+    read<UserList>(LISTS_KEY).filter((l) => l.id !== id),
+  );
+}
+
+/** Adds or removes a title from any list, including the default "My List". */
+export function toggleInList(listId: string, item: Omit<LibraryItem, "addedAt">) {
+  if (listId === DEFAULT_LIST_ID) {
+    const current = read<LibraryItem>(LIST_KEY);
+    if (current.some((i) => same(i, item))) write(LIST_KEY, current.filter((i) => !same(i, item)));
+    else write(LIST_KEY, [{ ...item, addedAt: Date.now() }, ...current]);
+    return;
+  }
+  write(
+    LISTS_KEY,
+    read<UserList>(LISTS_KEY).map((l) => {
+      if (l.id !== listId) return l;
+      const has = l.items.some((i) => same(i, item));
+      return { ...l, items: has ? l.items.filter((i) => !same(i, item)) : [{ ...item, addedAt: Date.now() }, ...l.items] };
+    }),
+  );
+}
+
+export function removeFromAnyList(listId: string, id: number, type: MediaType) {
+  if (listId === DEFAULT_LIST_ID) return removeFromList(id, type);
+  write(
+    LISTS_KEY,
+    read<UserList>(LISTS_KEY).map((l) => (l.id === listId ? { ...l, items: l.items.filter((i) => !same(i, { id, type })) } : l)),
+  );
+}
+
+/** Ids of every list (default included) that contains the title. */
+export function useListsContaining(id: number, type: MediaType): string[] {
+  const mine = useMyList();
+  const lists = useLists();
+  const ids = lists.filter((l) => l.items.some((i) => same(i, { id, type }))).map((l) => l.id);
+  return mine.some((i) => same(i, { id, type })) ? [DEFAULT_LIST_ID, ...ids] : ids;
+}
+
 /* ------------------------------------------------------------- progress */
 
 export function useProgress() {
@@ -99,8 +190,27 @@ export function useProgress() {
 }
 
 export function recordProgress(item: Omit<ProgressItem, "addedAt">) {
-  const rest = read<ProgressItem>(PROGRESS_KEY).filter((i) => !same(i, item));
-  write(PROGRESS_KEY, [{ ...item, addedAt: Date.now() }, ...rest].slice(0, MAX_PROGRESS));
+  const all = read<ProgressItem>(PROGRESS_KEY);
+  const prev = all.find((i) => same(i, item));
+  const rest = all.filter((i) => !same(i, item));
+  // Keep the saved position when re-opening the same title/episode without a new one.
+  const sameEpisode = prev && prev.season === item.season && prev.episode === item.episode;
+  const merged: ProgressItem = {
+    ...item,
+    position: item.position ?? (sameEpisode ? prev.position : undefined),
+    duration: item.duration ?? (sameEpisode ? prev.duration : undefined),
+    addedAt: Date.now(),
+  };
+  write(PROGRESS_KEY, [merged, ...rest].slice(0, MAX_PROGRESS));
+}
+
+/** Saved position (seconds) to resume from, if it's worth resuming. */
+export function getResumePosition(id: number, type: MediaType, season?: number, episode?: number): number {
+  const p = read<ProgressItem>(PROGRESS_KEY).find((i) => same(i, { id, type }));
+  if (!p?.position || p.season !== season || p.episode !== episode) return 0;
+  if (p.position < 30) return 0; // barely started
+  if (p.duration && p.position > p.duration - 90) return 0; // basically finished
+  return Math.max(0, p.position - 5); // a few seconds of context
 }
 
 export function removeProgress(id: number, type: MediaType) {
@@ -122,6 +232,10 @@ export function clearList() {
   write(LIST_KEY, []);
 }
 
+export function clearCustomLists() {
+  write(LISTS_KEY, []);
+}
+
 export function removeFromList(id: number, type: MediaType) {
   write(
     LIST_KEY,
@@ -139,6 +253,7 @@ export type LibraryBackup = {
   version: 1;
   exportedAt: string;
   list: LibraryItem[];
+  lists?: UserList[];
   progress: ProgressItem[];
   settings?: unknown;
 };
@@ -156,6 +271,7 @@ export function exportLibrary(): LibraryBackup {
     version: 1,
     exportedAt: new Date().toISOString(),
     list: read<LibraryItem>(LIST_KEY),
+    lists: read<UserList>(LISTS_KEY),
     progress: read<ProgressItem>(PROGRESS_KEY),
     settings,
   };
@@ -182,6 +298,21 @@ export function importLibrary(data: unknown): { list: number; progress: number }
     return added.length;
   };
   const result = { list: merge<LibraryItem>(LIST_KEY, backup.list), progress: merge<ProgressItem>(PROGRESS_KEY, backup.progress, 30) };
+  // Custom lists: merge by name, so importing twice doesn't duplicate them.
+  if (Array.isArray(backup.lists)) {
+    const current = read<UserList>(LISTS_KEY);
+    for (const l of backup.lists) {
+      if (!l || typeof l.name !== "string" || !Array.isArray(l.items)) continue;
+      const items = l.items.filter(isItem);
+      const existing = current.find((c) => c.name.toLowerCase() === l.name.toLowerCase());
+      if (existing) {
+        existing.items = [...existing.items, ...items.filter((i) => !existing.items.some((e) => same(e, i)))];
+      } else {
+        current.push({ id: newId(), name: cleanName(l.name) || "Imported list", createdAt: Date.now(), items });
+      }
+    }
+    write(LISTS_KEY, [...current]);
+  }
   if (backup.settings && typeof backup.settings === "object") {
     try {
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(backup.settings));

@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 const STORAGE = [
   ["cf_returning", "Cookie (first-party)", "Remembers you’ve opened the app, so the site opens straight to it next time", "1 year"],
   ["cineflex:list", "Local storage", "Titles you added to My List", "Until you remove them"],
-  ["cineflex:progress", "Local storage", "Continue Watching (last title / episode opened)", "Until cleared (max 30 items)"],
+  ["cineflex:lists", "Local storage", "Lists you created and the titles in them", "Until you delete them"],
+  ["cineflex:progress", "Local storage", "Continue Watching: last title / episode and how far you got", "Until cleared (max 30 items)"],
   ["cineflex:settings", "Local storage", "Accent color and playback preferences", "Until cleared"],
   ["cineflex:recent-searches", "Local storage", "Your last 8 search terms", "Until cleared"],
   ["cineflex:install-dismissed", "Local storage", "Remembers that you closed the install banner", "Until cleared"],

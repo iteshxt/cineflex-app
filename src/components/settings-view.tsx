@@ -14,12 +14,14 @@ import {
   Upload,
 } from "lucide-react";
 import {
+  clearCustomLists,
   clearList,
   clearProgress,
   clearRecentSearches,
   countRecentSearches,
   exportLibrary,
   importLibrary,
+  useLists,
   useMyList,
   useProgress,
 } from "@/lib/library";
@@ -363,6 +365,7 @@ const noop = () => () => {};
 
 function ClearRows() {
   const list = useMyList();
+  const lists = useLists();
   const progress = useProgress();
   // Read once on the client; this count isn't shown anywhere else.
   const initialSearches = useSyncExternalStore(noop, countRecentSearches, () => 0);
@@ -383,6 +386,13 @@ function ClearRows() {
       />
       <DangerRow label="Continue Watching" detail={n(progress.length)} action="Clear history" disabled={progress.length === 0} onConfirm={clearProgress} />
       <DangerRow label="My List" detail={n(list.length)} action="Clear list" disabled={list.length === 0} onConfirm={clearList} />
+      <DangerRow
+        label="Your lists"
+        detail={`${lists.length} list${lists.length === 1 ? "" : "s"}`}
+        action="Delete all"
+        disabled={lists.length === 0}
+        onConfirm={clearCustomLists}
+      />
     </>
   );
 }

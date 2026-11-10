@@ -40,10 +40,11 @@ export default function PrivacyPage() {
       </p>
       <ul>
         <li>
-          <strong>My List</strong> — titles you saved.
+          <strong>My List and your lists</strong> — titles you saved and lists you created.
         </li>
         <li>
-          <strong>Continue Watching</strong> — the titles (and for series, the season and episode) you last opened.
+          <strong>Continue Watching</strong> — the titles (and for series, the season and episode) you last opened, and
+          roughly how far you got.
         </li>
         <li>
           <strong>Settings</strong> — accent color, ad shield, autoplay and spoiler options.
