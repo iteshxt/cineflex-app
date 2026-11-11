@@ -10,7 +10,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Nav />
       </Suspense>
       <div className="pb-28 md:pb-0 md:pl-rail">
-        {children}
+        {/* At least a screen tall, so short pages (search, empty states) never pull the footer into view. */}
+        <div className="min-h-dvh">{children}</div>
         <Suspense>
           <AppFooter />
         </Suspense>
