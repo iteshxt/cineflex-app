@@ -60,8 +60,9 @@ export default function TermsPage() {
       <h2>5. Intellectual property</h2>
       <p>
         Film and TV titles, posters, artwork and trademarks belong to their respective owners and are shown for
-        identification and informational purposes. The CineFlex name, logo and the design of the site belong to its
-        developer. If you believe something on CineFlex infringes your rights, see{" "}
+        identification and informational purposes. The CineFlex source code is open source under the{" "}
+        <a href={`${SITE.repo}/blob/main/LICENSE`}>MIT License</a>; the CineFlex name and logo belong to its developer. If
+        you believe something on CineFlex infringes your rights, see{" "}
         <Link href="/dmca">Copyright &amp; DMCA</Link>.
       </p>
 

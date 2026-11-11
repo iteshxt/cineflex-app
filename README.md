@@ -96,6 +96,10 @@ A first visit to `/` shows the landing page. After that, `/` opens the app at `/
 - [Technical specs](docs/specs.md)
 - [Design](docs/design.md)
 
+## License
+
+[MIT](LICENSE) © 2026 iteshxt. The license covers this code only, not TMDB data or anything served by the embedded player.
+
 ## Disclaimer
 
 CineFlex does not host, store or upload any video. Titles, artwork and metadata are provided by TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB. Playback is provided by a third-party embedded player. See the [disclaimer](https://cineflex-app-beta.vercel.app/disclaimer).
