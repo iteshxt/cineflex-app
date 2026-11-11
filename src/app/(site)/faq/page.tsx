@@ -44,8 +44,12 @@ const GROUPS: { title: string; items: QA[] }[] = [
         a: "The shield blocks pop-ups and redirects, but anything the provider draws inside its own player frame is outside CineFlex’s control.",
       },
       {
+        q: "Why does a strange link appear at the bottom of the screen over the video?",
+        a: "The video provider lays an invisible ad link over its player, and your browser shows where any link points when you hover it. With the ad shield on, clicking it can’t open an ad or leave CineFlex, and if it ever replaces the player, CineFlex puts the player back where you were. The link itself lives inside the provider’s player, so CineFlex can’t remove it.",
+      },
+      {
         q: "Does it remember where I stopped?",
-        a: "It remembers which title and episode you last opened, so Continue Watching takes you back to it. The embedded player doesn’t report the exact timestamp.",
+        a: "Yes. Continue Watching takes you back to the title or episode, and the player starts close to where you left off. If you skip around inside the player, the saved spot can be a little off.",
       },
     ],
   },
