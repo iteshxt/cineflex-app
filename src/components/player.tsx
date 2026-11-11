@@ -234,6 +234,14 @@ export function Player({
     () => position.current + (playingSince.current ? (Date.now() - playingSince.current) / 1000 : 0),
     [],
   );
+  /** Reload the embed at the current position. */
+  const reloadPlayer = useCallback(() => {
+    position.current = currentPosition();
+    playingSince.current = null;
+    setStartAt(Math.max(0, Math.floor(position.current) - 3));
+    setReloadKey((k) => k + 1);
+  }, [currentPosition]);
+
   const checkpoint = useCallback(() => {
     if (playingSince.current === null) return;
     save(currentPosition(), duration.current);
@@ -340,6 +348,9 @@ export function Player({
             shield={shield}
             scale={scale}
             title={`${title}${current ? ` S${current.season}E${current.episode}` : ""}`}
+            // An ad link replaced the player inside the frame: put the player back where we
+            // were. Skipped when the player may legitimately move to related titles.
+            onHijacked={settings.showRelated ? undefined : reloadPlayer}
           />
         )}
 
@@ -413,12 +424,7 @@ export function Player({
             </PillButton>
             <PillButton
               label="Reload player"
-              onClick={() => {
-              position.current = currentPosition();
-              playingSince.current = null;
-              setStartAt(Math.max(0, Math.floor(position.current) - 3));
-              setReloadKey((k) => k + 1);
-            }}
+              onClick={reloadPlayer}
             >
               <RotateCw className="size-4" />
             </PillButton>
@@ -567,21 +573,38 @@ function PlayerFrame({
   shield,
   scale,
   title,
+  onHijacked,
 }: {
   src: string;
   shield: boolean;
   scale: number;
   title: string;
+  /** The frame loaded a second page (e.g. an ad link replaced the player). */
+  onHijacked?: () => void;
 }) {
   const ref = useRef<HTMLIFrameElement>(null);
+  // Counts page loads after we point the frame at the player. The player app itself never
+  // reloads the frame, so a second load means something (typically an invisible ad link the
+  // provider lays over the video) navigated the frame away from the player.
+  const loads = useRef(-1);
   useLayoutEffect(() => {
     const frame = ref.current;
     if (!frame) return;
+    loads.current = 0;
     frame.src = src;
     return () => {
+      loads.current = -1;
       frame.src = "about:blank";
     };
   }, [src]);
+  const onLoad = () => {
+    if (loads.current < 0) return; // initial about:blank, or after we blanked it
+    loads.current += 1;
+    if (loads.current > 1) {
+      loads.current = -1;
+      onHijacked?.();
+    }
+  };
   return (
     <iframe
       ref={ref}
@@ -599,6 +622,7 @@ function PlayerFrame({
       // Ad shield: leaving out allow-popups / allow-top-navigation / allow-modals means
       // clicks inside the player can't open ad tabs, redirect this page, or show alerts.
       sandbox={shield ? SANDBOX : undefined}
+      onLoad={onLoad}
     />
   );
 }
