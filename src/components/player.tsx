@@ -133,19 +133,11 @@ export function Player({
   const sheet = useRef<HTMLElement>(null);
   const [fullscreen, setFullscreen] = useState(false);
   useEffect(() => {
+    // Only track our own (page-level) fullscreen. The embed's fullscreen button is left alone:
+    // swapping it for ours needs a fresh click (browsers refuse a second fullscreen request on
+    // the same click), so intercepting it just bounced the viewer back out of fullscreen.
     const onChange = () => {
       const el = document.fullscreenElement;
-      // The embed's own fullscreen button makes its iframe the fullscreen element, which
-      // would hide our controls and sheet. Swap it for our page-level fullscreen instead.
-      // This relies on the click's user activation; if the browser refuses, the embed's
-      // fullscreen simply stays as it was.
-      if (el && root.current && el !== root.current && root.current.contains(el)) {
-        void document
-          .exitFullscreen()
-          .then(() => root.current?.requestFullscreen())
-          .catch(() => {});
-        return;
-      }
       setFullscreen(el === root.current);
     };
     document.addEventListener("fullscreenchange", onChange);
