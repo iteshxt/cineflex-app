@@ -27,7 +27,7 @@ export type Product = {
 };
 
 export const DEVELOPER = {
-  name: "Itesh Tomar",
+  name: "iteshxt",
   role: "Software Developer",
   website: "https://iteshxt.me",
   github: "https://github.com/iteshxt",
