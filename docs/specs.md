@@ -51,7 +51,16 @@ Without `TMDB_API_KEY`, pages render an empty state explaining how to set it ins
 | `GET /api/search?q=` | Route handler | Proxies TMDB multi-search (keeps key server-side) |
 | `GET /api/tv/[id]/season/[n]` | Route handler | Season episodes for client-side season switching |
 
-Per Cache Components rules, every `params` / `searchParams` read happens inside a `<Suspense>` boundary, and all TMDB calls are `"use cache"` functions with `cacheLife("hours")` (search uses `"minutes"`).
+Per Cache Components rules, every `params` / `searchParams` read happens inside a `<Suspense>` boundary, and all TMDB calls are `"use cache"` functions: lists `cacheLife("hours")`, title details and seasons `"days"`, search `"minutes"`. A failed list fetch is cached for `"minutes"`, never `"seconds"`: anything under 5 minutes becomes a dynamic hole that runs a function on every view until the next deploy.
+
+**Keeping Vercel origin transfer low.** On Vercel, any page with a dynamic hole runs a function on every view, even when the CDN reports a HIT. So:
+
+- Title and watch routes (`/movie/[id]`, `/tv/[id]`, `/watch/...`) export `generateStaticParams` with a placeholder id (`PLACEHOLDER_ID` in `src/lib/tmdb.ts`, which 404s without calling TMDB). Listing any param is what lets Next.js store each title page after its first visit and serve it from the cache afterwards (`s-maxage` = the data's revalidate time). Without it, every view is rendered again. Real ids aren't prerendered, because a transient TMDB error during prerender fails the build.
+- The episode page works out previous/next (which depends on today's date) in a cached helper instead of calling `connection()`, so it can be cached too.
+- Links keep the default prefetch. With Partial Prefetching that only loads the route's shared App Shell, which is static.
+- `/api/search` and `/api/tv/[id]/season/[n]` send `s-maxage`, so the CDN answers repeat requests. Search updates its URL with `history.replaceState`, not a router call per keystroke.
+- `robots.txt` blocks AI and SEO-tool crawlers and keeps all bots off query-string variations (`/*?`), since title pages link to each other without end.
+- `/movies` and `/tv` read `searchParams`, so their grid stays dynamic per view.
 
 ## 5. TMDB integration (`src/lib/tmdb.ts`)
 
@@ -131,7 +140,7 @@ Keys: `cineflex:list`, `cineflex:progress` (max 30, most recent first). Exposed 
 
 ## 11. First visit vs. returning
 
-`src/proxy.ts` (Next.js proxy, formerly middleware): the first visit to `/` shows the landing page. Requests to any app route set a functional `cf_returning` cookie (1 year, HttpOnly, SameSite=Lax, no identifier); afterwards `/` redirects (307) to `/home`. `/?welcome` always shows the landing page and is linked from the footer and Settings.
+`src/proxy.ts` (Next.js proxy, formerly middleware): the first visit to `/` shows the landing page. Opening any app page sets a functional `cf_returning` cookie in the browser (`src/components/returning-cookie.tsx`; 1 year, SameSite=Lax, no identifier); afterwards `/` redirects (307) to `/home`. The proxy only matches `/`, so app pages stay plain cacheable responses. `/?welcome` always shows the landing page and is linked from the footer and Settings.
 
 ## 12. Resume and lists
 
