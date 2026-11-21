@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Clock, Info, Loader2, Play, Search, Star, TrendingUp, X } from "lucide-react";
 import { tmdbImage } from "@/lib/image";
@@ -66,7 +66,6 @@ function useRecent() {
 /* ------------------------------------------------------------------ view */
 
 export function SearchView({ suggestions }: { suggestions: MediaItem[] }) {
-  const router = useRouter();
   const params = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
   const [results, setResults] = useState<MediaItem[] | null>(null);
@@ -94,7 +93,8 @@ export function SearchView({ suggestions }: { suggestions: MediaItem[] }) {
     const q = query.trim();
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
-      router.replace(q ? `/search?q=${encodeURIComponent(q)}` : "/search", { scroll: false });
+      // Keep the URL shareable without a router round trip on every keystroke.
+      window.history.replaceState(null, "", q ? `/search?q=${encodeURIComponent(q)}` : "/search");
       if (!q) {
         setResults(null);
         setFailed(false);
@@ -118,7 +118,7 @@ export function SearchView({ suggestions }: { suggestions: MediaItem[] }) {
       clearTimeout(t);
       ctrl.abort();
     };
-  }, [query, router, attempt]);
+  }, [query, attempt]);
 
   const all = results ?? [];
   const counts = {
