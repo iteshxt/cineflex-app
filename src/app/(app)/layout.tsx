@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { Nav, NavView } from "@/components/nav";
+import { ReturningCookie } from "@/components/returning-cookie";
 import { AppFooter } from "@/components/site-footer";
 
 /** App shell: navigation rail / mobile pill around every in-app page. */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <ReturningCookie />
       <Suspense fallback={<NavView pathname="" />}>
         <Nav />
       </Suspense>
