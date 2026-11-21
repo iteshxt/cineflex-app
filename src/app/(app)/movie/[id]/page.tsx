@@ -3,10 +3,16 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Backdrop, Cast, DetailHeader, DetailSkeleton } from "@/components/detail";
 import { Row } from "@/components/row";
-import { getMovie } from "@/lib/tmdb";
+import { getMovie, parseId, PLACEHOLDER_ID } from "@/lib/tmdb";
+
+// See PLACEHOLDER_ID: lets each title page be cached after its first visit.
+export function generateStaticParams() {
+  return [{ id: PLACEHOLDER_ID }];
+}
 
 export async function generateMetadata({ params }: PageProps<"/movie/[id]">): Promise<Metadata> {
-  const movie = await getMovie(Number((await params).id));
+  const id = parseId((await params).id);
+  const movie = id ? await getMovie(id) : null;
   return movie ? { title: movie.title, description: movie.overview } : {};
 }
 

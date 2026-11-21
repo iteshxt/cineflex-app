@@ -117,7 +117,7 @@ export async function getTrending(
   "use cache";
   const data = await tmdb(`/trending/${type}/${window}`, { page });
   if (data) cacheLife("hours");
-  else cacheLife("seconds");
+  else cacheLife("minutes"); // short enough to retry soon, long enough to stay in the static page
   return toItems(data?.results, type === "all" ? undefined : type);
 }
 
@@ -127,7 +127,7 @@ export async function getList(type: MediaType, list: ListName, page = 1): Promis
   "use cache";
   const data = await tmdb(`/${type}/${list}`, { page });
   if (data) cacheLife("hours");
-  else cacheLife("seconds");
+  else cacheLife("minutes"); // short enough to retry soon, long enough to stay in the static page
   return toItems(data?.results, type);
 }
 
@@ -180,7 +180,7 @@ export async function getGenres(type: MediaType): Promise<Genre[]> {
   "use cache";
   const data = await tmdb<{ genres: Genre[] }>(`/genre/${type}/list`);
   if (data) cacheLife("days");
-  else cacheLife("seconds");
+  else cacheLife("minutes");
   return data?.genres ?? [];
 }
 
@@ -204,7 +204,7 @@ const APPEND = { append_to_response: "images,credits,recommendations,videos", in
 export async function getMovie(id: number): Promise<MovieDetail | null> {
   "use cache";
   const r = await tmdbStrict(`/movie/${id}`, APPEND);
-  if (r) cacheLife("hours");
+  if (r) cacheLife("days"); // title details rarely change
   else cacheLife("minutes");
   if (!r) return null;
   const base = toItem(r, "movie")!;
@@ -224,7 +224,7 @@ export async function getMovie(id: number): Promise<MovieDetail | null> {
 export async function getShow(id: number): Promise<ShowDetail | null> {
   "use cache";
   const r = await tmdbStrict(`/tv/${id}`, APPEND);
-  if (r) cacheLife("hours");
+  if (r) cacheLife("days"); // title details rarely change
   else cacheLife("minutes");
   if (!r) return null;
   const base = toItem(r, "tv")!;
@@ -254,7 +254,7 @@ export async function getShow(id: number): Promise<ShowDetail | null> {
 export async function getSeason(id: number, season: number): Promise<Season | null> {
   "use cache";
   const r = await tmdbStrict(`/tv/${id}/season/${season}`);
-  if (r) cacheLife("hours");
+  if (r) cacheLife("days"); // title details rarely change
   else cacheLife("minutes");
   if (!r) return null;
   return {
@@ -283,4 +283,20 @@ export async function searchMulti(query: string): Promise<MediaItem[]> {
   const data = q ? await tmdbStrict(`/search/multi`, { query: q, include_adult: "false" }) : null;
   cacheLife("minutes");
   return toItems(data?.results).filter((i) => i.poster);
+}
+
+/* -------------------------------------------------------- static params */
+
+/**
+ * The one param title routes list in `generateStaticParams`. Cache Components needs at least
+ * one, and listing any is what lets Next.js cache each title page after its first visit
+ * (served from the CDN afterwards) instead of rendering it on every request. A placeholder
+ * resolves to a 404 without touching TMDB, so a flaky network can't fail the build.
+ */
+export const PLACEHOLDER_ID = "0";
+
+/** A TMDB id from a route param, or null when it can't be one. */
+export function parseId(raw: string): number | null {
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : null;
 }

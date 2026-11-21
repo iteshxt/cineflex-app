@@ -5,10 +5,16 @@ import { Backdrop, Cast, DetailHeader, DetailSkeleton } from "@/components/detai
 import { EpisodesPanel } from "@/components/episodes-panel";
 import { ResumeLink } from "@/components/resume-link";
 import { Row } from "@/components/row";
-import { getSeason, getShow } from "@/lib/tmdb";
+import { getSeason, getShow, parseId, PLACEHOLDER_ID } from "@/lib/tmdb";
+
+// See PLACEHOLDER_ID: lets each title page be cached after its first visit.
+export function generateStaticParams() {
+  return [{ id: PLACEHOLDER_ID }];
+}
 
 export async function generateMetadata({ params }: PageProps<"/tv/[id]">): Promise<Metadata> {
-  const show = await getShow(Number((await params).id));
+  const id = parseId((await params).id);
+  const show = id ? await getShow(id) : null;
   return show ? { title: show.title, description: show.overview } : {};
 }
 
